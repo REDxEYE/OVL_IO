@@ -92,7 +92,7 @@ class OVLType:
         self.name = ''
         self.name_offset = 0
         self.zero04 = 0
-        self.hash = 0
+        self.type_hash = 0
         self.loader_type = 0
         self.symbol_start = 0
         self.symbols_to_resolve = 0
@@ -104,7 +104,7 @@ class OVLType:
         self.name_offset = reader.read_uint32()
         if is_x64:
             self.zero04 = reader.read_uint32()
-        self.hash = reader.read_uint32()
+        self.type_hash = reader.read_uint32()
         self.loader_type = reader.read_uint32()
         self.symbol_start = reader.read_uint32()
         self.symbols_to_resolve = reader.read_uint8()
@@ -114,7 +114,7 @@ class OVLType:
         self.name = reader.read_from_offset(0x90 + self.name_offset, reader.read_ascii_string)
 
     def __repr__(self):
-        return '<OVL type "{}" count:{}>'.format(self.name, self.symbols_to_resolve)
+        return '<OVL type "{}" count:{} type_hash:{}>'.format(self.name, self.symbols_to_resolve,self.type_hash)
 
 
 class OVLFile:
@@ -140,7 +140,7 @@ class OVLFile:
         self.name = reader.read_from_offset(0x90 + self.name_offset, reader.read_ascii_string)
 
     def __repr__(self):
-        return '<OVL file "{}" type:{} loader:{}>'.format(self.name, self.type, self.loader.name)
+        return '<OVL file "{}" type:{} loader:{} loader id:{} hash:{}>'.format(self.name, self.type, self.loader.name,self.loader_index,self.hash)
 
 
 # u4 name_offset;

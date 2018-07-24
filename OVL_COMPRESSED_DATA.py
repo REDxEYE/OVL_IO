@@ -30,9 +30,9 @@ class OVSTypeSubHeader:
         self.unk2 = 0
         self.size = 0
         self.offset = 0
-        self.unk5 = 0
+        self.file_hash = 0
         self.unk6 = 0
-        self.unk7 = 0
+        self.type_hash = 0
         self.unk8 = 0
 
     def read(self, reader: ByteIO):
@@ -40,9 +40,9 @@ class OVSTypeSubHeader:
         self.unk2 = reader.read_uint32()
         self.size = reader.read_uint32()
         self.offset = reader.read_uint32()
-        self.unk5 = reader.read_uint32()
+        self.file_hash = reader.read_uint32()
         self.unk6 = reader.read_uint32()
-        self.unk7 = reader.read_uint32()
+        self.type_hash = reader.read_uint32()
         self.unk8 = reader.read_uint32()
 
     def __repr__(self):
@@ -55,8 +55,8 @@ class OVSTypeSubHeader:
 class OVSFileDataHeader:
 
     def __init__(self):
-        self.hash = 0
-        self.file_type = 0
+        self.file_hash = 0
+        self.type_hash = 0
         self.fileNo = 0
         self.type = 0
         self.unk4 = 0
@@ -66,8 +66,8 @@ class OVSFileDataHeader:
         self.unk9 = 0
 
     def read(self, reader: ByteIO):
-        self.hash = reader.read_uint32()
-        self.file_type = reader.read_uint32()
+        self.file_hash = reader.read_uint32()
+        self.type_hash = reader.read_uint32()
         self.fileNo = reader.read_uint16()
         self.type = reader.read_uint16()
         self.unk4 = reader.read_uint32()
@@ -86,14 +86,14 @@ class OVSFileDataHeader:
 class OVSFileSection3:
 
     def __init__(self):
-        self.hash = 0
-        self.section = 0
+        self.file_hash = 0
+        self.type_hash = 0
         self.u = 0
         self.offset = 0
 
     def read(self, reader: ByteIO):
-        self.hash = reader.read_uint32()
-        self.section = reader.read_uint32()
+        self.file_hash = reader.read_uint32()
+        self.type_hash = reader.read_uint32()
         self.u = reader.read_int32()
         self.offset = reader.read_int32()
 

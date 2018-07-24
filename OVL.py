@@ -102,13 +102,13 @@ class OVL:
             header.read_subs(reader)
             for sh in header.subs:
                 pass
-                # print(sh)
+                print(sh)
         # print(reader)
         for i in range(archive.fsUnk1Count):
             file_header = OVSFileDataHeader()
             file_header.read(reader)
             self.ovs_file_headers.append(file_header)
-            # print(file_header)
+            print(file_header)
         # print(reader)
         reader.skip(archive.fsUnk2Count * 8)
         # print(reader)
@@ -117,19 +117,19 @@ class OVL:
             file3_header = OVSFileSection3()
             file3_header.read(reader)
             self.ovs_file3_headers.append(file3_header)
-            # print(file3_header)
+            print(file3_header)
         # print(reader)
 
         for i in range(archive.fsUnk4Count):
             file4_header = OVSFileSection4()
             file4_header.read(reader)
             self.ovs_file4_headers.append(file4_header)
-            # print(file4_header)
+            print(file4_header)
         # print(reader)
 
 
 if __name__ == '__main__':
-    model = r'test_data\velociraptor.ovl'
+    model = r'./test_data/Tyrannosaurus.ovl'
     sys.argv.append(model)
     if len(sys.argv) > 1:
         model = sys.argv[-1]
