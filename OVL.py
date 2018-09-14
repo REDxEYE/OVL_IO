@@ -1,6 +1,7 @@
 import os
 import sys
 import zlib
+from pprint import pprint
 
 from OVL_COMPRESSED_DATA import *
 from OVL_DATA import *
@@ -90,6 +91,12 @@ class OVL:
         except:
             pass
 
+    def get_file_by_hash(self,hash):
+        for f in self.files:
+            if f.hash == hash and f:
+                return f
+        return None
+
     def read_uncompressed(self):
         archive = self.archive
         reader = ByteIO(byte_object=self.zlib_data)
@@ -107,6 +114,7 @@ class OVL:
         for i in range(archive.fsUnk1Count):
             file_header = OVSFileDataHeader()
             file_header.read(reader)
+            file_header.file_name = self.get_file_by_hash(file_header.hash).name
             self.ovs_file_headers.append(file_header)
             print(file_header)
         # print(reader)
@@ -129,23 +137,23 @@ class OVL:
 
 
 if __name__ == '__main__':
-    model = r'./test_data/Tyrannosaurus.ovl'
-    sys.argv.append(model)
-    if len(sys.argv) > 1:
-        model = sys.argv[-1]
-        a = OVL(model)
-        a.read()
-        a.read_uncompressed()
-        print('##########FILE TYPES##########')
-        for type_ in a.types:
-            print(type_)
-
-        print('##########FILES##########')
-        for file in a.files:
-            print(file)
-
-    else:
-        print('You forgot to pass path to file')
+    # model = r'./test_data/Tyrannosaurus.ovl'
+    # sys.argv.append(model)
+    # if len(sys.argv) > 1:
+    #     model = sys.argv[-1]
+    #     a = OVL(model)
+    #     a.read()
+    #     a.read_uncompressed()
+    #     print('##########FILE TYPES##########')
+    #     for type_ in a.types:
+    #         print(type_)
+    #
+    #     print('##########FILES##########')
+    #     for file in a.files:
+    #         print(file)
+    #
+    # else:
+    #     print('You forgot to pass path to file')
     # for file in os.listdir(r'test_data'):
     #     if file.endswith('.ovl'):
     #         model = r'test_data\{}'.format(file)
@@ -166,13 +174,14 @@ if __name__ == '__main__':
     #         # pprint(a.unknown)
     #         # pprint(a.archives2)
     # model = r'test_data\velociraptor.ovl'
-    # # model = r'test_data\Parasaurolophus.ovl'
-    # a = OVL(model)
-    # a.read()
-    # print(a.header.__dict__)
-    # # pprint(a.files)
-    # print(a.archive.__dict__)
-    # a.read_uncompressed()
-    # for file in a.files:
-    #     if file.hash == 2056281489:
-    #         print(file)
+    model = r'test_data\Parasaurolophus.ovl'
+    a = OVL(model)
+    a.read()
+    print(a.header.__dict__)
+    pprint(a.types)
+    pprint(a.files)
+    print(a.archive.__dict__)
+    a.read_uncompressed()
+    for file in a.files:
+        if file.hash == 2056281489:
+            print(file)
