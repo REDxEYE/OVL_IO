@@ -1,6 +1,7 @@
 from typing import List
 
-from ByteIO import ByteIO
+# from ByteIO import ByteIO
+from CTF_ByteIO import ByteIO
 
 
 class OVSTypeHeader:
@@ -55,44 +56,43 @@ class OVSTypeSubHeader:
 class OVSFileDataHeader:
 
     def __init__(self):
-        self.file_hash = 0
+        self.name_hash = 0
         self.type_hash = 0
         self.fileNo = 0
-        self.type = 0
+        self.size = 0
+        self.offset = 0
         self.unk4 = 0
         self.size1 = 0
         self.size2 = 0
-        self.size3_texture = 0
-        self.unk9 = 0
+        # self.size3_texture = 0
+        # self.unk9 = 0
+        self.file_name = ''
 
     def read(self, reader: ByteIO):
-        self.file_hash = reader.read_uint32()
+        self.name_hash = reader.read_uint32()
         self.type_hash = reader.read_uint32()
         self.fileNo = reader.read_uint16()
-        self.type = reader.read_uint16()
+        self.size = reader.read_uint16()
         self.unk4 = reader.read_uint32()
-        self.size1 = reader.read_uint32()
-        self.size2 = reader.read_uint32()
-        self.size3_texture = reader.read_uint32()
-        self.unk9 = reader.read_uint32()
+        self.size1 = reader.read_uint64()
+        self.size2 = reader.read_uint64()
+        # self.size3_texture = reader.read_uint32()
+        # self.unk9 = reader.read_uint32()
 
     def __repr__(self):
-        mems = []
-        for m, v in vars(self).items():
-            mems.append('{}:{}'.format(m, v))
-        return '<OVSFileDataHeader {}>'.format(','.join(mems))
+        return f'<OVSFileDataHeader "{self.file_name}" type hash:{self.type_hash} size:{self.size} offset:{self.offset}>'
 
 
 class OVSFileSection3:
 
     def __init__(self):
-        self.file_hash = 0
+        self.name_hash = 0
         self.type_hash = 0
         self.u = 0
         self.offset = 0
 
     def read(self, reader: ByteIO):
-        self.file_hash = reader.read_uint32()
+        self.name_hash = reader.read_uint32()
         self.type_hash = reader.read_uint32()
         self.u = reader.read_int32()
         self.offset = reader.read_int32()

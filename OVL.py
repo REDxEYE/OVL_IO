@@ -1,7 +1,7 @@
 import os
-import sys
 import zlib
 from pprint import pprint
+from pathlib import Path
 
 from OVL_COMPRESSED_DATA import *
 from OVL_DATA import *
@@ -11,14 +11,14 @@ class OVL:
     is_x64 = False
 
     def __init__(self, path):
-        self.path = path
-        self.reader = ByteIO(path=path)
+        self.path = Path(path)
+        self.reader = ByteIO(self.path.open('rb'))
         self.header = OVLHeader()
         self.types = []  # type:List[OVLType]
         self.files = []  # type:List[OVLFile]
         self.archive_name_table_offset = 0
         self.archives = []  # type: List[OVLArchiveV2]
-        self.archives = []  # type:# List[OVLArchive]
+        # self.archives = []  # type: List[OVLArchiveV2]
         self.dirs = []  # type:List[OVLDir]
         self.parts = []  # type:List[OVLPart]
         self.others = []  # type:List[OVLOther]
@@ -76,13 +76,11 @@ class OVL:
             ovl_archive2 = OVLArchive2()
             ovl_archive2.read(self.reader)
             self.archives2.append(ovl_archive2)
+
         for archive in self.archives:
             if archive.name == 'STATIC':
                 self.archive = archive
-                # with self.reader.save_current_pos():
-                #     a = self.reader.read_uint16()
-                #     assert a == 0x9c78
-                compressed_data = self.reader.read_bytes(archive.CompressedDataSize)
+                compressed_data = self.reader.read_bytes(archive.packed_size)
                 uncompressed_data = zlib.decompress(compressed_data)
                 self.zlib_data = uncompressed_data
         try:
@@ -91,14 +89,22 @@ class OVL:
         except:
             pass
 
-    def get_file_by_hash(self,hash):
+    def get_file_by_hash(self, hash):
         for f in self.files:
             if f.hash == hash and f:
                 return f
         return None
 
+    def get_type_by_hash(self, hash):
+        for t in self.types:
+            if t.type_hash == hash:
+                return t
+        return None
+
     def read_uncompressed(self):
         archive = self.archive
+        section_offsets = []
+        total_size = 0
         reader = ByteIO(byte_object=self.zlib_data)
         for _ in range(archive.headerTypeCnt):
             header = OVSTypeHeader()
@@ -109,21 +115,38 @@ class OVL:
             header.read_subs(reader)
             for sh in header.subs:
                 pass
+                total_size += sh.size
+                section_offsets.append(sh.offset)
                 print(sh)
         # print(reader)
+        offset = 0
+
         for i in range(archive.fsUnk1Count):
             file_header = OVSFileDataHeader()
+            file_header.offset = offset
             file_header.read(reader)
-            file_header.file_name = self.get_file_by_hash(file_header.hash).name
+            offset += file_header.size
+            file_header.file_name = self.get_file_by_hash(file_header.name_hash).name
+            # file_header.type_name = self.get_type_by_hash(file_header.type_hash).name
             self.ovs_file_headers.append(file_header)
             print(file_header)
         # print(reader)
-        reader.skip(archive.fsUnk2Count * 8)
+        n3xtab = self.archive.fsUnk2Count
+        array8 = []
+        array9 = [None] * n3xtab
+        array10 = []
+        for _ in range(n3xtab):
+            array8.append(reader.read_int32())
+            array10.append(reader.read_int32())
         # print(reader)
 
-        for i in range(archive.fsUnk3Count):
+        for i in range(archive.asset_count):
             file3_header = OVSFileSection3()
             file3_header.read(reader)
+            if file3_header.u > 0:
+                file3_header.offset = section_offsets[file3_header.u] + file3_header.offset
+            else:
+                file3_header.offset = 0
             self.ovs_file3_headers.append(file3_header)
             print(file3_header)
         # print(reader)
@@ -131,9 +154,79 @@ class OVL:
         for i in range(archive.fsUnk4Count):
             file4_header = OVSFileSection4()
             file4_header.read(reader)
+            file4_header.offset1 = section_offsets[file4_header.section1] + file4_header.offset1
+            file4_header.offset2 = section_offsets[file4_header.section2] + file4_header.offset2
             self.ovs_file4_headers.append(file4_header)
             print(file4_header)
-        # print(reader)
+        reader.skip(archive.size_extra)
+        section = ByteIO(byte_object=reader.read_bytes(total_size))
+        for file_section in self.ovs_file4_headers:
+            section.seek(file_section.offset1)
+            # print(section.tell())
+            section.write_uint64(file_section.offset2)
+            print(f'Replacing 00000 on {section.tell()} to {file_section.offset2}')
+            # with section.save_current_pos():
+            #     section.rewind(8)
+            #     print('test',section.peek_int64())
+            # print(section.tell())
+        pos = reader.tell()
+        for i in range(len(self.ovs_file_headers)):
+            if self.ovs_file_headers[i].type_hash != 193506774:
+                for j in range(self.ovs_file_headers[i].size):
+                    num17 = self.ovs_file_headers[i].offset + j
+                    if array8[num17] == 0:
+                        array9[num17] = pos
+                        pos += array10[num17]
+        for i in range(len(self.ovs_file_headers)):
+            if self.ovs_file_headers[i].type_hash != 193506774:
+                for j in range(self.ovs_file_headers[i].size):
+                    num18 = self.ovs_file_headers[i].offset + j
+                    if array8[num18] == 1:
+                        array9[num18] = pos
+                        pos += array10[num18]
+        for i in range(len(self.ovs_file_headers)):
+            if self.ovs_file_headers[i].type_hash != 193506774:
+                for j in range(self.ovs_file_headers[i].size):
+                    num19 = self.ovs_file_headers[i].offset + j
+                    array9[num19] = pos
+                    pos += array10[num19]
+        for i in range(len(self.ovs_file_headers)):
+            if self.ovs_file_headers[i].type_hash != 193506774:
+                for j in range(self.ovs_file_headers[i].size):
+                    num20 = self.ovs_file_headers[i].offset + j
+                    if array8[num20] == 2:
+                        array9[num20] = pos
+                        pos += array10[num20]
+
+        for k in range(len(self.ovs_file_headers)):
+            file_header = self.ovs_file_headers[k]
+            if file_header.type_hash == 193499543 and file_header.size==3:
+                section_pos = array9[file_header.offset+1]
+                reader.seek(section_pos)
+                reader.skip(16)
+                num21 = reader.read_int32()
+                if num21!=0:
+                    reader.skip(94)
+                    num22 = reader.read_int16()
+                    reader.skip(256+4+4+4)
+                    num23 = reader.read_int32()
+                    num24 = reader.read_int32()
+                    reader.skip(20*(num22-1))
+                    reader.skip(4*(num22))
+                    reader.skip(104*(num22))
+                    num25 = array9[file_header.offset+1]
+#fffffff0
+                    reader.seek((reader.tell()-num25)+15 & 0xfffffff0)+num25
+                    num26 = reader.read_int32()
+                    reader.skip(140)
+                    num27 = num26+7 & 2147483640
+                    reader.skip(num27*2)
+                    reader.skip(num26*64)
+                    str = self.path.stem+"_"+hex(file_header.name_hash)
+                    print(str)
+                    input()
+
+        print(reader)
 
 
 if __name__ == '__main__':
@@ -182,6 +275,6 @@ if __name__ == '__main__':
     pprint(a.files)
     print(a.archive.__dict__)
     a.read_uncompressed()
-    for file in a.files:
-        if file.hash == 2056281489:
-            print(file)
+    # for file in a.files:
+    #     if file.hash == 2056281489:
+    #         print(file)

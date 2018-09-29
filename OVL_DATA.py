@@ -1,4 +1,5 @@
-from ByteIO import ByteIO
+from CTF_ByteIO import ByteIO
+# from ByteIO import ByteIO
 
 
 class OVLHeader:
@@ -132,10 +133,10 @@ class OVLFile:
     def read(self, reader: ByteIO):
         self.name_offset = reader.read_uint32()
         self.hash = reader.read_uint32()
-        self.type = reader.read_uint8()
-        self.unknown1 = reader.read_uint8()
-        self.loader_index = reader.read_uint8()
-        self.unknown2 = reader.read_uint8()
+        self.type = reader.read_uint16()
+        # self.unknown1 = reader.read_uint8()
+        self.loader_index = reader.read_uint16()
+        # self.unknown2 = reader.read_uint8()
 
         self.name = reader.read_from_offset(0x90 + self.name_offset, reader.read_ascii_string)
 
@@ -237,14 +238,14 @@ class OVLArchiveV2:
         self.Block6b = 0
 
         self.fsUnk4Count = 0
-        self.fsUnk3Count = 0
+        self.asset_count = 0
 
         self.compressedDataStart = 0
 
-        self.Unknown1 = 0
+        self.size_extra = 0
 
-        self.CompressedDataSize = 0
-        self.DecompressedDataSize = 0
+        self.packed_size = 0
+        self.unpacked_size = 0
 
         self.Unknown2 = 0
         self.Unknown3 = 0
@@ -259,20 +260,20 @@ class OVLArchiveV2:
         self.Block1b = reader.read_uint16()
         self.Block2a = reader.read_uint16()
         self.Block2b = reader.read_uint16()
-        self.headerSubTypeCnt = reader.read_uint16()
-        self.Block3b = reader.read_uint16()
+        self.headerSubTypeCnt = reader.read_uint32()
+        # self.Block3b = reader.read_uint16()
         self.fsUnk1Count = reader.read_uint16()
         self.headerTypeCnt = reader.read_uint16()
         self.Block5a = reader.read_uint16()
         self.Block5b = reader.read_uint16()
-        self.fsUnk2Count = reader.read_uint16()
-        self.Block6b = reader.read_uint16()
+        self.fsUnk2Count = reader.read_uint32()
+        # self.Block6b = reader.read_uint16()
         self.fsUnk4Count = reader.read_uint32()
-        self.fsUnk3Count = reader.read_uint32()
+        self.asset_count = reader.read_uint32()
         self.compressedDataStart = reader.read_uint32()
-        self.Unknown1 = reader.read_uint32()
-        self.CompressedDataSize = reader.read_uint32()
-        self.DecompressedDataSize = reader.read_uint32()
+        self.size_extra = reader.read_uint32()
+        self.packed_size = reader.read_uint32()
+        self.unpacked_size = reader.read_uint32()
         self.Unknown2 = reader.read_uint32()
         self.Unknown3 = reader.read_uint32()
         self.Header2Size = reader.read_uint32()
@@ -280,8 +281,8 @@ class OVLArchiveV2:
         self.name = reader.read_from_offset(archive_name_table_offset + self.nameIndex, reader.read_ascii_string)
 
     def __repr__(self):
-        return '<OVL archive "{}" compressed size:{} uncompressed size:{}>'.format(self.name, self.CompressedDataSize,
-                                                                                   self.DecompressedDataSize)
+        return '<OVL archive "{}" compressed size:{} uncompressed size:{}>'.format(self.name, self.packed_size,
+                                                                                   self.unpacked_size)
 
 
 class OVLDir:
