@@ -1,7 +1,7 @@
 from typing import List
 
-# from ByteIO import ByteIO
-from CTF_ByteIO import ByteIO
+from ByteIO import ByteIO
+#from CTF_ByteIO import ByteIO
 
 
 class OVSTypeHeader:

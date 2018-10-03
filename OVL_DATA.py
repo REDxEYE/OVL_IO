@@ -1,5 +1,5 @@
-from CTF_ByteIO import ByteIO
-# from ByteIO import ByteIO
+#from CTF_ByteIO import ByteIO
+from ByteIO import ByteIO
 
 
 class OVLHeader:
@@ -86,6 +86,44 @@ class OVLHeader:
         self.zero38 = reader.read_uint32()
         self.zero3C = reader.read_uint32()
 
+    def write(self, writer: ByteIO):
+        writer.write_fourcc(self.sig)
+        writer.write_fmt('4B', self.flags, self.version, self.need_bswap, self.unknown07)
+        writer.write_uint32(self.flags2)
+        writer.write_uint32(self.unknown0C)
+        writer.write_uint32(self.names_length)
+        writer.write_uint32(self.unknown2_count)
+        writer.write_uint32(self.other_count)
+        writer.write_uint16(self.dir_count)
+        writer.write_uint16(self.type_count)
+        writer.write_uint32(self.file_count)
+        writer.write_uint32(self.file_count2)
+        writer.write_uint32(self.part_count)
+        writer.write_uint32(self.archive_count)
+        writer.write_uint32(self.unknown30)
+        writer.write_uint32(self.unknown34)
+        writer.write_uint32(self.unknown38)
+        writer.write_uint32(self.unknown3C)
+        writer.write_uint32(self.unknown_count)
+        writer.write_uint32(self.unknown44)
+        writer.write_uint32(self.unknown48)
+        writer.write_uint32(self.unknown4C)
+        writer.write_uint32(self.archive_names_length)
+        writer.write_uint32(self.file_count3)
+        writer.write_uint32(self.type_names_length)
+        writer.write_uint32(self.zero0C)
+        writer.write_uint32(self.zero10)
+        writer.write_uint32(self.zero14)
+        writer.write_uint32(self.zero18)
+        writer.write_uint32(self.zero1C)
+        writer.write_uint32(self.zero20)
+        writer.write_uint32(self.zero24)
+        writer.write_uint32(self.zero28)
+        writer.write_uint32(self.zero2C)
+        writer.write_uint32(self.zero30)
+        writer.write_uint32(self.zero34)
+        writer.write_uint32(self.zero38)
+        writer.write_uint32(self.zero3C)
 
 class OVLType:
 
@@ -114,6 +152,18 @@ class OVLType:
         self.Unknown5 = reader.read_uint8()
         self.name = reader.read_from_offset(0x90 + self.name_offset, reader.read_ascii_string)
 
+    def write(self, writer: ByteIO, is_x64=True):
+        writer.write_uint32(self.name_offset)
+        if is_x64:
+            writer.write_uint32(self.zero04)
+        writer.write_uint32(self.type_hash)
+        writer.write_uint32(self.loader_type)
+        writer.write_uint32(self.symbol_start)
+        writer.write_uint8(self.symbols_to_resolve)
+        writer.write_uint8(self.Unknown3)
+        writer.write_uint8(self.Unknown4)
+        writer.write_uint8(self.Unknown5)
+
     def __repr__(self):
         return '<OVL type "{}" count:{} type_hash:{}>'.format(self.name, self.symbols_to_resolve,self.type_hash)
 
@@ -139,6 +189,12 @@ class OVLFile:
         # self.unknown2 = reader.read_uint8()
 
         self.name = reader.read_from_offset(0x90 + self.name_offset, reader.read_ascii_string)
+
+    def write(self, writer: ByteIO):
+        writer.write_uint32(self.name_offset)
+        writer.write_uint32(self.hash)
+        writer.write_uint16(self.type)
+        writer.write_uint16(self.loader_index)
 
     def __repr__(self):
         return '<OVL file "{}" type:{} loader:{} loader id:{} hash:{}>'.format(self.name, self.type, self.loader.name,self.loader_index,self.hash)
@@ -280,6 +336,29 @@ class OVLArchiveV2:
         self.Unknown5 = reader.read_uint32()
         self.name = reader.read_from_offset(archive_name_table_offset + self.nameIndex, reader.read_ascii_string)
 
+    def write(self, writer: ByteIO):
+        writer.write_uint32(self.nameIndex)
+        writer.write_uint16(self.Block1a)
+        writer.write_uint16(self.Block1b)
+        writer.write_uint16(self.Block2a)
+        writer.write_uint16(self.Block2b)
+        writer.write_uint32(self.headerSubTypeCnt)
+        writer.write_uint16(self.fsUnk1Count)
+        writer.write_uint16(self.headerTypeCnt)
+        writer.write_uint16(self.Block5a)
+        writer.write_uint16(self.Block5b)
+        writer.write_uint32(self.fsUnk2Count)
+        writer.write_uint32(self.fsUnk4Count)
+        writer.write_uint32(self.asset_count)
+        writer.write_uint32(self.compressedDataStart)
+        writer.write_uint32(self.size_extra)
+        writer.write_uint32(self.packed_size)
+        writer.write_uint32(self.unpacked_size)
+        writer.write_uint32(self.Unknown2)
+        writer.write_uint32(self.Unknown3)
+        writer.write_uint32(self.Header2Size)
+        writer.write_uint32(self.Unknown5)
+
     def __repr__(self):
         return '<OVL archive "{}" compressed size:{} uncompressed size:{}>'.format(self.name, self.packed_size,
                                                                                    self.unpacked_size)
@@ -294,6 +373,9 @@ class OVLDir:
     def read(self, reader: ByteIO):
         self.name_offset = reader.read_uint32()
         self.name = reader.read_from_offset(0x90 + self.name_offset, reader.read_ascii_string)
+
+    def write(self, writer: ByteIO):
+        writer.write_uint32(self.name_offset)
 
     def __repr__(self):
         return '<OVL dir "{}">'.format(self.name)
@@ -317,6 +399,13 @@ class OVLPart:
         self.unknown0C = reader.read_uint32()
         self.unknown10 = reader.read_uint32()
 
+    def write(self, writer: ByteIO):
+        writer.write_uint32(self.hash)
+        writer.write_uint32(self.name_offset)
+        writer.write_uint32(self.unknown08)
+        writer.write_uint32(self.unknown0C)
+        writer.write_uint32(self.unknown10)
+
     def __repr__(self):
         return '<OVL part "{}">'.format(self.name)
 
@@ -335,6 +424,11 @@ class OVLOther:
         self.name = reader.read_from_offset(0x90 + self.name_offset, reader.read_ascii_string)
         self.unknown08 = reader.read_uint32()
 
+    def write(self, writer: ByteIO):
+        writer.write_uint32(self.unknown00)
+        writer.write_uint32(self.name_offset)
+        writer.write_uint32(self.unknown08)
+
     def __repr__(self):
         return '<OVL other "{}">'.format(self.name)
 
@@ -351,6 +445,11 @@ class OVLUnk:
         self.unknown04 = reader.read_uint32()
         self.unknown08 = reader.read_uint32()
 
+    def write(self, writer: ByteIO):
+        writer.write_uint32(self.unknown00)
+        writer.write_uint32(self.unknown04)
+        writer.write_uint32(self.unknown08)
+
     def __repr__(self):
         return '<OVL unk {} {} {}>'.format(self.unknown00, self.unknown04, self.unknown08)
 
@@ -364,6 +463,10 @@ class OVLArchive2:
     def read(self, reader: ByteIO):
         self.unknown00 = reader.read_uint32()
         self.data_size = reader.read_uint32()
+
+    def write(self, writer: ByteIO):
+        writer.write_uint32(self.unknown00)
+        writer.write_uint32(self.data_size)
 
     def __repr__(self):
         return '<OVL archive2 {} data size:{}>'.format(self.unknown00, self.data_size)

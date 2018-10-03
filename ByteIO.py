@@ -79,6 +79,11 @@ class ByteIO:
         for _ in range(amount):
             self._write(b'\x00')
 
+    def align(self, alignment, base = 0):
+        pos = self.tell() - base
+        if pos % alignment != 0:
+            self.fill(alignment - pos % alignment)
+
     # ------------ PEEK SECTION ------------ #
 
     def _peek(self, size=1):
@@ -201,6 +206,9 @@ class ByteIO:
 
     def write(self, t, value):
         self._write(struct.pack(t, value))
+
+    def write_fmt(self, fmt, *values):
+        self._write(struct.pack(fmt, *values))
 
     def write_uint64(self, value):
         self.write('Q', value)
