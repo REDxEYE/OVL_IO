@@ -310,6 +310,8 @@ class OVLArchiveV2:
 
         self.Unknown5 = 0
 
+        self.uncompressed_data = None #type: bytes
+
     def read(self, reader: ByteIO, archive_name_table_offset):
         self.nameIndex = reader.read_uint32()
         self.Block1a = reader.read_uint16()

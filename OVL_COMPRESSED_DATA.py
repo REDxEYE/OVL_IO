@@ -1,7 +1,7 @@
 from typing import List
 
 from ByteIO import ByteIO
-#from CTF_ByteIO import ByteIO
+# from CTF_ByteIO import ByteIO
 from OVL_DATA import OVLArchiveV2
 
 
@@ -9,13 +9,14 @@ class OVLCompressedData:
     def __init__(self, parent, archive: OVLArchiveV2):
         self.parent = parent
         self.archive = archive
-        self.ovs_headers = []       # type: List[OVSTypeHeader]
+        self.ovs_headers = []  # type: List[OVSTypeHeader]
         self.ovs_file_headers = []  # type: List[OVSFileDataHeader]
-        self.embedded_file_headers = [] # type: List[EmbeddedFileDescriptor]
-        self.ovs_file3_headers = [] # type: List[OVSFileSection3]
-        self.ovs_file4_headers = [] # type: List[OVSFileSection4]
-        self.chunks = [] # type: List[bytes]
-        self.embedded_files = [] # type: List[bytes]
+        self.embedded_file_headers = []  # type: List[EmbeddedFileDescriptor]
+        self.ovs_file3_headers = []  # type: List[OVSFileSection3]
+        self.ovs_file4_headers = []  # type: List[OVSFileSection4]
+        self.chunks = []  # type: List[bytes]
+        self.embedded_files = []  # type: List[bytes]
+        self.extra_data = []  # type: bytes
 
     def read(self, reader: ByteIO):
         for _ in range(self.archive.headerTypeCnt):
