@@ -21,29 +21,47 @@ class OVLCompressedData:
         self.extra_data = []  # type: bytes
 
     def read(self, reader: ByteIO):
-        for _ in range(self.archive.headerTypeCnt):
+        section_offsets = []
+        total_size = 0
+        for _ in range(self.archive.file_type_header_count):
             header = OVSTypeHeader()
             header.read(reader)
             self.ovs_headers.append(header)
         for header in self.ovs_headers:
             header.read_subs(reader)
-        for _ in range(self.archive.fsUnk1Count):
+            for sub_header in header.subs:
+                total_size += sub_header.size
+                section_offsets.append(sub_header.offset)
+
+        offset = 0
+        for _ in range(self.archive.file_data_header_count):
             file_header = OVSFileDataHeader()
+            file_header.offset = offset
             file_header.read(reader)
+            offset += file_header.size
             file_header.file_name = self.parent.get_file_by_hash(file_header.name_hash).name
             self.ovs_file_headers.append(file_header)
+
         for _ in range(self.archive.embeddedFileCount):
             embedded_file = EmbeddedFileDescriptor()
             embedded_file.read(reader)
             self.embedded_file_headers.append(embedded_file)
+
         for _ in range(self.archive.asset_count):
             file3_header = OVSFileSection3()
             file3_header.read(reader)
             file3_header.name = self.parent.get_file_by_hash(file3_header.name_hash).name
+            if file3_header.chunk_id > 0:
+                file3_header.offset = section_offsets[file3_header.chunk_id] + file3_header.offset
+            else:
+                file3_header.offset = 0
             self.ovs_file3_headers.append(file3_header)
+
         for _ in range(self.archive.fsUnk4Count):
             file4_header = OVSFileSection4()
             file4_header.read(reader)
+            file4_header.offset1 = section_offsets[file4_header.section1] + file4_header.offset1
+            file4_header.offset2 = section_offsets[file4_header.section2] + file4_header.offset2
             self.ovs_file4_headers.append(file4_header)
         self.extra_data = reader.read_bytes(self.archive.size_extra)
         all_sub_headers = [sub for header in self.ovs_headers for sub in header.subs]
@@ -55,17 +73,18 @@ class OVLCompressedData:
             self.chunks.append(chunk)
         for embedded_file_header in self.embedded_file_headers:
             self.embedded_files.append(reader.read_bytes(embedded_file_header.size))
+
         # assert reader.tell() == reader.size()
 
     def write(self, writer: ByteIO):
-        self.archive.headerTypeCnt = len(self.ovs_headers)
+        self.archive.file_type_header_count = len(self.ovs_headers)
         for header in self.ovs_headers:
             header.sub_type_count = len(header.subs)
             header.write(writer)
         for chunk_id, sub_header in enumerate(sub_header for header in self.ovs_headers for sub_header in header.subs):
             sub_header.size = len(self.chunks[chunk_id].data)
             sub_header.write(writer)
-        self.archive.fsUnk1Count = len(self.ovs_file_headers)
+        self.archive.file_data_header_count = len(self.ovs_file_headers)
         for file_header in self.ovs_file_headers:
             file_header.write(writer)
         self.archive.embeddedFileCount = len(self.embedded_file_headers)
@@ -224,7 +243,7 @@ class OVSFileDataHeader:
         writer.write_uint64(self.size2)
 
     def __repr__(self):
-        return f'<OVSFileDataHeader "{self.chunk_name}" type hash:{self.type_hash} size:{self.size} offset:{self.offset}>'
+        return f'<OVSFileDataHeader "{self.name_hash}" type hash:{self.type_hash} size:{self.size} offset:{self.offset}>'
 
 
 class EmbeddedFileDescriptor:

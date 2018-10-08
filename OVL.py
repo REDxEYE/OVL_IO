@@ -153,7 +153,7 @@ class OVL:
         section_offsets = []
         total_size = 0
         reader = ByteIO(byte_object=archive.uncompressed_data)
-        for _ in range(archive.headerTypeCnt):
+        for _ in range(archive.file_type_header_count):
             header = OVSTypeHeader()
             header.read(reader)
             self.ovs_headers.append(header)
@@ -167,7 +167,7 @@ class OVL:
                 print(sh)
         offset = 0
 
-        for i in range(archive.fsUnk1Count):
+        for i in range(archive.file_data_header_count):
             file_header = OVSFileDataHeader()
             file_header.offset = offset
             file_header.read(reader)

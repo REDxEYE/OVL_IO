@@ -285,8 +285,8 @@ class OVLArchiveV2:
 
         self.Block3b = 0
 
-        self.fsUnk1Count = 0
-        self.headerTypeCnt = 0
+        self.file_data_header_count = 0
+        self.file_type_header_count = 0
 
         self.Block5a = 0
         self.Block5b = 0
@@ -322,8 +322,8 @@ class OVLArchiveV2:
         self.Block2b = reader.read_uint16()
         self.headerSubTypeCnt = reader.read_uint32()
         # self.Block3b = reader.read_uint16()
-        self.fsUnk1Count = reader.read_uint16()
-        self.headerTypeCnt = reader.read_uint16()
+        self.file_data_header_count = reader.read_uint16()
+        self.file_type_header_count = reader.read_uint16()
         self.Block5a = reader.read_uint16()
         self.Block5b = reader.read_uint16()
         self.embeddedFileCount = reader.read_uint32()
@@ -347,8 +347,8 @@ class OVLArchiveV2:
         writer.write_uint16(self.Block2a)
         writer.write_uint16(self.Block2b)
         writer.write_uint32(self.headerSubTypeCnt)
-        writer.write_uint16(self.fsUnk1Count)
-        writer.write_uint16(self.headerTypeCnt)
+        writer.write_uint16(self.file_data_header_count)
+        writer.write_uint16(self.file_type_header_count)
         writer.write_uint16(self.Block5a)
         writer.write_uint16(self.Block5b)
         writer.write_uint32(self.embeddedFileCount)
