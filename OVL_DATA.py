@@ -463,6 +463,6 @@ class OVLArchive2:
 
 if __name__ == '__main__':
     a = OVLHeader()
-    b = ByteIO(path=r'test_data\Velociraptor.ovl')
+    b = ByteIO(path=r'/test_data\Velociraptor.ovl')
     a.read(b)
     print(a.__dict__)

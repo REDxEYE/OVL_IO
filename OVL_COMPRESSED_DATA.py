@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List
+from typing import List, Dict
 
 from ByteIO import ByteIO
 from OVL_DATA import OVLArchiveV2
@@ -21,6 +21,8 @@ class OVLCompressedData:
         self.ovs_cur_pos = 0
         self.reader: ByteIO = None
         self.buffer_reader: ByteIO = None
+        self.hash2file_data_header = {} #type: Dict[int,OVLFileDataHeader]
+        self.array10 = [0] * self.archive.embedded_file_count
 
     def write_data(self, name, data, ext):
         path = Path('./') / 'extracted' / name
@@ -51,12 +53,14 @@ class OVLCompressedData:
         section_offsets[0] = 0
 
         offset = 0
+
         for _ in range(self.archive.file_data_header_count):
             file_header = OVLFileDataHeader()
             file_header.offset = offset
             file_header.read(reader)
             offset += file_header.size
             file_header.file_name = self.parent.get_file_by_hash(file_header.name_hash).name
+            self.hash2file_data_header[file_header.name_hash] = file_header
             self.ovs_file_headers.append(file_header)
 
         for _ in range(self.archive.embedded_file_count):
@@ -88,20 +92,18 @@ class OVLCompressedData:
         self.buffer_reader = new_buffer
         self.ovs_cur_pos = reader.tell()
 
-    def read_mesh(self):
-        reader = self.reader
         reader.seek(self.ovs_cur_pos)
 
         # mesh reading part
         # just messing with offsets
-        array10 = [0] * self.archive.embedded_file_count
+
         for file_header in self.ovs_file_headers:
             if file_header.type_hash != 193506774:
                 for j in range(file_header.size):
                     embedded_header_id = file_header.offset + j
                     embedded_header = self.embedded_file_headers[embedded_header_id]
                     if embedded_header.unk1 == 0:
-                        array10[embedded_header_id] = self.ovs_cur_pos
+                        self.array10[embedded_header_id] = self.ovs_cur_pos
                         self.ovs_cur_pos += embedded_header.size
         for file_header in self.ovs_file_headers:
             if file_header.type_hash != 193506774:
@@ -109,14 +111,14 @@ class OVLCompressedData:
                     embedded_header_id = file_header.offset + j
                     embedded_header = self.embedded_file_headers[embedded_header_id]
                     if embedded_header.unk1 == 1:
-                        array10[embedded_header_id] = self.ovs_cur_pos
+                        self.array10[embedded_header_id] = self.ovs_cur_pos
                         self.ovs_cur_pos += embedded_header.size
         for file_header in self.ovs_file_headers:
             if file_header.type_hash == 193506774:
                 for j in range(file_header.size):
                     embedded_header_id = file_header.offset + j
                     embedded_header = self.embedded_file_headers[embedded_header_id]
-                    array10[embedded_header_id] = self.ovs_cur_pos
+                    self.array10[embedded_header_id] = self.ovs_cur_pos
                     self.ovs_cur_pos += embedded_header.size
         for file_header in self.ovs_file_headers:
             if file_header.type_hash != 193506774:
@@ -124,11 +126,15 @@ class OVLCompressedData:
                     embedded_header_id = file_header.offset + j
                     embedded_header = self.embedded_file_headers[embedded_header_id]
                     if embedded_header.unk1 == 2:
-                        array10[embedded_header_id] = self.ovs_cur_pos
+                        self.array10[embedded_header_id] = self.ovs_cur_pos
                         self.ovs_cur_pos += embedded_header.size
+
+    def read_mesh(self):
+        reader = self.reader
+
         for file_header in self.ovs_file_headers:
             if file_header.type_hash == 193499543 and file_header.size == 3:
-                reader.seek(array10[file_header.offset + 1])
+                reader.seek(self.array10[file_header.offset + 1])
                 reader.skip(16)
                 num21 = reader.read_int32()
                 bone_pos = []
@@ -152,7 +158,7 @@ class OVLCompressedData:
                     reader.skip(20 * (num22 - 1))
                     reader.skip(4 * num22)
                     reader.skip(104 * num22)
-                    num25 = array10[file_header.offset + 1]
+                    num25 = self.array10[file_header.offset + 1]
                     new_offset = (reader.tell() - num25 + 15 & 0xFFFFFFF0) + num25
                     reader.seek(new_offset)
                     bone_count = reader.read_int32()
@@ -171,7 +177,7 @@ class OVLCompressedData:
                     for bone_id in range(bone_count):
                         parent_id = reader.read_int8()
                         bone_parents[bone_id] = parent_id
-                    reader.seek(array10[file_header.offset + 2])
+                    reader.seek(self.array10[file_header.offset + 2])
                     for i in range(vertex_count):
                         vertex = reader.read_packed_vector()
                         vertexes.append(vertex)
