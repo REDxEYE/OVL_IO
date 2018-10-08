@@ -32,6 +32,8 @@ class OVL:
         self.ovs_file3_headers = []  # type: List[OVSFileSection3]
         self.ovs_file4_headers = []  # type: List[OVSFileSection4]
 
+        self.files_by_hash = {}
+
     def read(self):
         self.header.read(self.reader)
         self.is_x64 = True  # self.header.flags & 0x08
@@ -78,22 +80,70 @@ class OVL:
             self.archives2.append(ovl_archive2)
 
         for archive in self.archives:
+            archive.uncompressed_data = zlib.decompress(self.reader.read_bytes(archive.packed_size))
             if archive.name == 'STATIC':
                 self.archive = archive
-                compressed_data = self.reader.read_bytes(archive.packed_size)
-                uncompressed_data = zlib.decompress(compressed_data)
-                self.zlib_data = uncompressed_data
+                self.zlib_data = archive.uncompressed_data
         try:
             with open(r'test_data\{}.decompressed'.format(os.path.basename(self.path)[:-4]), 'wb') as fp:
                 fp.write(a.zlib_data)
         except:
             pass
 
+    def write(self, writer: ByteIO):
+        self.header.write(writer)   # not all header fields are accurate yet, but we'll come back and re-write this section
+        names_start = writer.tell()
+        for ovl_type in sorted(self.types, key=lambda x:x.name_offset):
+            ovl_type.name_offset = writer.tell() - names_start
+            writer.write_ascii_string(ovl_type.name, True)
+        for ovl_file in sorted(self.files, key=lambda x:x.name_offset):
+            ovl_file.name_offset = writer.tell() - names_start
+            writer.write_ascii_string(ovl_file.name, True)
+        for ovl_dir in sorted(self.dirs, key=lambda x:x.name_offset):
+            ovl_dir.name_offset = writer.tell() - names_start
+            writer.write_ascii_string(ovl_dir.name, True)
+        for ovl_part in sorted(self.parts, key=lambda x:x.name_offset):
+            ovl_part.name_offset = writer.tell() - names_start
+            writer.write_ascii_string(ovl_part.name, True)
+        for ovl_other in sorted(self.others, key=lambda x:x.name_offset):
+            ovl_other.name_offset = writer.tell() - names_start
+            writer.write_ascii_string(ovl_other.name, True)
+        writer.align(8)
+        self.header.names_length = writer.tell() - names_start
+        for ovl_type in self.types:
+            ovl_type.write(writer, self.is_x64)
+        for ovl_file in self.files:
+            ovl_file.write(writer)
+        archive_name_table_start = writer.tell()
+        for ovl_archive in self.archives:
+            ovl_archive.nameIndex = writer.tell() - archive_name_table_start
+            writer.write_ascii_string(ovl_archive.name, True)
+        writer.align(8, archive_name_table_start)
+        self.header.archive_names_length = writer.tell() - archive_name_table_start
+        for ovl_archive in self.archives:
+            ovl_archive.unpacked_size = len(ovl_archive.uncompressed_data)
+            ovl_archive.compressed_data = zlib.compress(ovl_archive.uncompressed_data)
+            ovl_archive.packed_size = len(ovl_archive.compressed_data)
+            ovl_archive.write(writer)
+        for ovl_dir in self.dirs:
+            ovl_dir.write(writer)
+        for ovl_part in self.parts:
+            ovl_part.write(writer)
+        for ovl_other in self.others:
+            ovl_other.write(writer)
+        for ovl_unk in self.unknown:
+            ovl_unk.write(writer)
+        for ovl_archive2 in self.archives2:
+            ovl_archive2.write(writer)
+        for ovl_archive in self.archives:
+            writer.write_bytes(ovl_archive.compressed_data)
+        writer.seek(0)
+        self.header.write(writer)
+
     def get_file_by_hash(self, hash):
-        for f in self.files:
-            if f.hash == hash and f:
-                return f
-        return None
+        if not self.files_by_hash:
+            self.files_by_hash = {f.hash: f for f in self.files}
+        return self.files_by_hash.get(hash)
 
     def get_type_by_hash(self, hash):
         for t in self.types:
@@ -131,7 +181,7 @@ class OVL:
             self.ovs_file_headers.append(file_header)
             print(file_header)
         # print(reader)
-        n3xtab = self.archive.fsUnk2Count
+        n3xtab = self.archive.embeddedFileCount
         array8 = []
         array9 = [None] * n3xtab
         array10 = []
@@ -143,8 +193,8 @@ class OVL:
         for i in range(archive.asset_count):
             file3_header = OVSFileSection3()
             file3_header.read(reader)
-            if file3_header.u > 0:
-                file3_header.offset = section_offsets[file3_header.u] + file3_header.offset
+            if file3_header.chunk_id > 0:
+                file3_header.offset = section_offsets[file3_header.chunk_id] + file3_header.offset
             else:
                 file3_header.offset = 0
             self.ovs_file3_headers.append(file3_header)
@@ -230,51 +280,11 @@ class OVL:
 
 
 if __name__ == '__main__':
-    # model = r'./test_data/Tyrannosaurus.ovl'
-    # sys.argv.append(model)
-    # if len(sys.argv) > 1:
-    #     model = sys.argv[-1]
-    #     a = OVL(model)
-    #     a.read()
-    #     a.read_uncompressed()
-    #     print('##########FILE TYPES##########')
-    #     for type_ in a.types:
-    #         print(type_)
-    #
-    #     print('##########FILES##########')
-    #     for file in a.files:
-    #         print(file)
-    #
-    # else:
-    #     print('You forgot to pass path to file')
-    # for file in os.listdir(r'test_data'):
-    #     if file.endswith('.ovl'):
-    #         model = r'test_data\{}'.format(file)
-    #         print(file)
-    #         # model = r'test_data\Parasaurolophus.ovl'
-    #         a = OVL(model)
-    #         a.read()
-    #         a.read_uncompressed()
-    #         # print(a.header.__dict__)
-    #         print(a.archives[0].__dict__)
-    #         pprint(a.ovs_headers)
-    #         # pprint(a.types)
-    #         # pprint(a.files)
-    #         # pprint(a.archives)
-    #         # pprint(a.dirs)
-    #         # pprint(a.parts)
-    #         # pprint(a.others)
-    #         # pprint(a.unknown)
-    #         # pprint(a.archives2)
-    # model = r'test_data\velociraptor.ovl'
     model = r'test_data\Parasaurolophus.ovl'
     a = OVL(model)
     a.read()
-    print(a.header.__dict__)
-    pprint(a.types)
-    pprint(a.files)
-    print(a.archive.__dict__)
-    a.read_uncompressed()
-    # for file in a.files:
-    #     if file.hash == 2056281489:
-    #         print(file)
+    compressed = OVLCompressedData(a, a.archive)
+    compressed.read(ByteIO(byte_object=a.archive.uncompressed_data))
+    out = ByteIO(path = 'test_data/compressed_repacked', mode = 'w')
+    compressed.write(out)
+    out.close()
