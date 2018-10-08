@@ -9,7 +9,7 @@ from OVL_DATA import *
 
 class OVL:
     is_x64 = False
-
+    unknown_type= OVLType()
     def __init__(self, path):
         self.path = Path(path)
         self.reader = ByteIO(self.path.open('rb'))
@@ -137,16 +137,16 @@ class OVL:
         writer.seek(0)
         self.header.write(writer)
 
-    def get_file_by_hash(self, hash_value):
+    def get_file_by_hash(self, hash_value) ->OVLFile:
         if not self.files_by_hash:
             self.files_by_hash = {f.hash: f for f in self.files}
         return self.files_by_hash.get(hash_value)
 
-    def get_type_by_hash(self, hash_value):
+    def get_type_by_hash(self, hash_value) ->OVLType:
         for t in self.types:
             if t.type_hash == hash_value:
                 return t
-        return None
+        return self.unknown_type
 
     def read_uncompressed(self):
         archive = self.static_archive
@@ -194,7 +194,6 @@ class OVL:
                 file3_header.offset = 0
             self.ovs_file3_headers.append(file3_header)
             print(file3_header)
-        # print(reader)
 
         for i in range(archive.fsUnk4Count):
             file4_header = OVSFileSection4()
@@ -207,13 +206,7 @@ class OVL:
         section = ByteIO(byte_object=reader.read_bytes(total_size))
         for file_section in self.ovs_file4_headers:
             section.seek(file_section.offset1)
-            # print(section.tell())
             section.write_uint64(file_section.offset2)
-            print(f'Replacing 00000 on {section.tell()} to {file_section.offset2}')
-            # with section.save_current_pos():
-            #     section.rewind(8)
-            #     print('test',section.peek_int64())
-            # print(section.tell())
         pos = reader.tell()
         for i in range(len(self.ovs_file_headers)):
             if self.ovs_file_headers[i].type_hash != 193506774:

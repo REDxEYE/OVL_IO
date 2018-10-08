@@ -56,6 +56,12 @@ class ByteIO:
             if 'w' in getattr(self.file, 'mode'):
                 self.file.close()
 
+    @property
+    def preview(self):
+        with self.save_current_pos():
+            return self.read_bytes(256)
+
+
     def rewind(self, amount):
         self.file.seek(-amount, io.SEEK_CUR)
 

@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import List
 
 from ByteIO import ByteIO
@@ -7,14 +8,15 @@ from OVL_DATA import OVLArchiveV2
 
 class OVLCompressedData:
     def __init__(self, parent, archive: OVLArchiveV2):
-        self.parent = parent
+        from OVL import OVL
+        self.parent: OVL = parent
         self.archive = archive
         self.ovs_headers = []  # type: List[OVSTypeHeader]
         self.ovs_file_headers = []  # type: List[OVSFileDataHeader]
         self.embedded_file_headers = []  # type: List[EmbeddedFileDescriptor]
         self.ovs_file3_headers = []  # type: List[OVSFileSection3]
         self.ovs_file4_headers = []  # type: List[OVSFileSection4]
-        self.chunks = []  # type: List[bytes]
+        self.chunks = []  # type: List[OVSChunk]
         self.embedded_files = []  # type: List[bytes]
         self.extra_data = []  # type: bytes
 
@@ -46,10 +48,14 @@ class OVLCompressedData:
         self.extra_data = reader.read_bytes(self.archive.size_extra)
         all_sub_headers = [sub for header in self.ovs_headers for sub in header.subs]
         for sub_header in all_sub_headers:
-            self.chunks.append(reader.read_bytes(sub_header.size))
+            reader.seek(sub_header.offset)
+            chunk = OVSChunk(self, sub_header)
+            chunk.read(reader)
+            chunk.save('./')
+            self.chunks.append(chunk)
         for embedded_file_header in self.embedded_file_headers:
             self.embedded_files.append(reader.read_bytes(embedded_file_header.size))
-        assert reader.tell() == reader.size()
+        # assert reader.tell() == reader.size()
 
     def write(self, writer: ByteIO):
         self.archive.headerTypeCnt = len(self.ovs_headers)
@@ -57,7 +63,7 @@ class OVLCompressedData:
             header.sub_type_count = len(header.subs)
             header.write(writer)
         for chunk_id, sub_header in enumerate(sub_header for header in self.ovs_headers for sub_header in header.subs):
-            sub_header.size = len(self.chunks[chunk_id])
+            sub_header.size = len(self.chunks[chunk_id].data)
             sub_header.write(writer)
         self.archive.fsUnk1Count = len(self.ovs_file_headers)
         for file_header in self.ovs_file_headers:
@@ -74,9 +80,50 @@ class OVLCompressedData:
             file4_header.write(writer)
         writer.write_bytes(self.extra_data)
         for chunk in self.chunks:
-            writer.write_bytes(chunk)
+            writer.write_bytes(chunk.data)
         for embedded_file in self.embedded_files:
             writer.write_bytes(embedded_file)
+
+
+class OVSChunk:
+
+    def __init__(self, parent: OVLCompressedData, header: 'OVSTypeSubHeader'):
+        self.parent = parent
+        self.header: OVSTypeSubHeader = header
+        self.data: bytes = None
+
+    @property
+    def chunk_name(self):
+        return self.file.name
+
+    @property
+    def file(self):
+        return self.parent.parent.get_file_by_hash(self.header.file_hash)
+
+    @property
+    def chunk_type(self):
+        return self.file.loader.name
+
+    def read(self, reader: ByteIO):
+        self.data = reader.read_bytes(self.header.size)
+
+    def __repr__(self):
+        return '<OVSChunk "{}" name:"{}">'.format(self.chunk_type, self.chunk_name)
+
+    @property
+    def file_ext(self):
+        return self.chunk_type.split(':')[1]
+
+    def save(self,path):
+        if type(path) is not Path:
+            path = Path(path)
+        path = path/'extracted'/self.file.name
+        if not path.parent.exists():
+            path.parent.mkdir(exist_ok=True)
+        path = path.with_suffix('.'+self.file_ext)
+        with path.open('wb') as fp:
+            fp.write(self.data)
+
 
 
 class OVSTypeHeader:
@@ -177,7 +224,7 @@ class OVSFileDataHeader:
         writer.write_uint64(self.size2)
 
     def __repr__(self):
-        return f'<OVSFileDataHeader "{self.file_name}" type hash:{self.type_hash} size:{self.size} offset:{self.offset}>'
+        return f'<OVSFileDataHeader "{self.chunk_name}" type hash:{self.type_hash} size:{self.size} offset:{self.offset}>'
 
 
 class EmbeddedFileDescriptor:

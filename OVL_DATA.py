@@ -1,4 +1,4 @@
-#from CTF_ByteIO import ByteIO
+# from CTF_ByteIO import ByteIO
 from ByteIO import ByteIO
 
 
@@ -125,10 +125,11 @@ class OVLHeader:
         writer.write_uint32(self.zero38)
         writer.write_uint32(self.zero3C)
 
+
 class OVLType:
 
     def __init__(self):
-        self.name = ''
+        self.name = 'UNKNOWN'
         self.name_offset = 0
         self.zero04 = 0
         self.type_hash = 0
@@ -165,7 +166,7 @@ class OVLType:
         writer.write_uint8(self.Unknown5)
 
     def __repr__(self):
-        return '<OVL type "{}" count:{} type_hash:{}>'.format(self.name, self.symbols_to_resolve,self.type_hash)
+        return '<OVL type "{}" count:{} type_hash:{}>'.format(self.name, self.symbols_to_resolve, self.type_hash)
 
 
 class OVLFile:
@@ -197,7 +198,8 @@ class OVLFile:
         writer.write_uint16(self.loader_index)
 
     def __repr__(self):
-        return '<OVL file "{}" type:{} loader:{} loader id:{} hash:{}>'.format(self.name, self.type, self.loader.name,self.loader_index,self.hash)
+        return '<OVL file "{}" type:{} loader:{} loader id:{} hash:{}>'.format(self.name, self.type, self.loader.name,
+                                                                               self.loader_index, self.hash)
 
 
 # u4 name_offset;
@@ -310,7 +312,7 @@ class OVLArchiveV2:
 
         self.Unknown5 = 0
 
-        self.uncompressed_data = None #type: bytes
+        self.uncompressed_data = None  # type: bytes
 
     def read(self, reader: ByteIO, archive_name_table_offset):
         self.nameIndex = reader.read_uint32()
