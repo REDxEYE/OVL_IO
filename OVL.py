@@ -32,6 +32,8 @@ class OVL:
         self.ovs_file3_headers = []  # type: List[OVSFileSection3]
         self.ovs_file4_headers = []  # type: List[OVSFileSection4]
 
+        self.files_by_hash = {}
+
     def read(self):
         self.header.read(self.reader)
         self.is_x64 = True  # self.header.flags & 0x08
@@ -139,10 +141,9 @@ class OVL:
         self.header.write(writer)
 
     def get_file_by_hash(self, hash):
-        for f in self.files:
-            if f.hash == hash and f:
-                return f
-        return None
+        if not self.files_by_hash:
+            self.files_by_hash = {f.hash: f for f in self.files}
+        return self.files_by_hash.get(hash)
 
     def get_type_by_hash(self, hash):
         for t in self.types:
@@ -180,7 +181,7 @@ class OVL:
             self.ovs_file_headers.append(file_header)
             print(file_header)
         # print(reader)
-        n3xtab = self.archive.fsUnk2Count
+        n3xtab = self.archive.embeddedFileCount
         array8 = []
         array9 = [None] * n3xtab
         array10 = []
@@ -192,8 +193,8 @@ class OVL:
         for i in range(archive.asset_count):
             file3_header = OVSFileSection3()
             file3_header.read(reader)
-            if file3_header.u > 0:
-                file3_header.offset = section_offsets[file3_header.u] + file3_header.offset
+            if file3_header.chunk_id > 0:
+                file3_header.offset = section_offsets[file3_header.chunk_id] + file3_header.offset
             else:
                 file3_header.offset = 0
             self.ovs_file3_headers.append(file3_header)
@@ -279,57 +280,11 @@ class OVL:
 
 
 if __name__ == '__main__':
-    # model = r'./test_data/Tyrannosaurus.ovl'
-    # sys.argv.append(model)
-    # if len(sys.argv) > 1:
-    #     model = sys.argv[-1]
-    #     a = OVL(model)
-    #     a.read()
-    #     a.read_uncompressed()
-    #     print('##########FILE TYPES##########')
-    #     for type_ in a.types:
-    #         print(type_)
-    #
-    #     print('##########FILES##########')
-    #     for file in a.files:
-    #         print(file)
-    #
-    # else:
-    #     print('You forgot to pass path to file')
-    # for file in os.listdir(r'test_data'):
-    #     if file.endswith('.ovl'):
-    #         model = r'test_data\{}'.format(file)
-    #         print(file)
-    #         # model = r'test_data\Parasaurolophus.ovl'
-    #         a = OVL(model)
-    #         a.read()
-    #         a.read_uncompressed()
-    #         # print(a.header.__dict__)
-    #         print(a.archives[0].__dict__)
-    #         pprint(a.ovs_headers)
-    #         # pprint(a.types)
-    #         # pprint(a.files)
-    #         # pprint(a.archives)
-    #         # pprint(a.dirs)
-    #         # pprint(a.parts)
-    #         # pprint(a.others)
-    #         # pprint(a.unknown)
-    #         # pprint(a.archives2)
-    # model = r'test_data\velociraptor.ovl'
     model = r'test_data\Parasaurolophus.ovl'
     a = OVL(model)
     a.read()
-    #x = bytearray(a.archives[0].uncompressed_data)
-    #x[0xB4164:0xB4174] = b'TESTING TESTING '
-    #a.archives[0].uncompressed_data = bytes(x)
-    out = ByteIO(path=r'test_data\repacked.ovl',mode='w')
-    a.write(out)
+    compressed = OVLCompressedData(a, a.archive)
+    compressed.read(ByteIO(byte_object=a.archive.uncompressed_data))
+    out = ByteIO(path = 'test_data/compressed_repacked', mode = 'w')
+    compressed.write(out)
     out.close()
-    print(a.header.__dict__)
-    pprint(a.types)
-    pprint(a.files)
-    print(a.archive.__dict__)
-    a.read_uncompressed()
-    # for file in a.files:
-    #     if file.hash == 2056281489:
-    #         print(file)
