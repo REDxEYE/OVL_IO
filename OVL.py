@@ -76,14 +76,14 @@ class OVL:
             self.archives2.append(ovl_archive2)
 
         for archive in self.archives:
-
-            if archive.name == 'STATIC':
-                archive.uncompressed_data = zlib.decompress(self.reader.read_bytes(archive.packed_size))
-                self.static_archive = archive
-            else:
-                self.reader.seek(archive.ovs_offset)
-                archive.uncompressed_data = zlib.decompress(self.reader.read_bytes(archive.packed_size))
             try:
+                if archive.name == 'STATIC':
+                    archive.uncompressed_data = zlib.decompress(self.reader.read_bytes(archive.packed_size))
+                    self.static_archive = archive
+                else:
+                    self.reader.seek(archive.ovs_offset)
+                    archive.uncompressed_data = zlib.decompress(self.reader.read_bytes(archive.packed_size))
+
                 with open(r'test_data\{}-{}.decompressed'.format(self.path.stem,archive.name), 'wb') as fp:
                     fp.write(self.static_archive.uncompressed_data)
             except:
@@ -180,7 +180,7 @@ class OVL:
             self.ovs_file_headers.append(file_header)
             print(file_header)
         # print(reader)
-        n3xtab = self.static_archive.embeddedFileCount
+        n3xtab = self.static_archive.embedded_file_count
         array8 = []
         array9 = [None] * n3xtab
         array10 = []
@@ -272,7 +272,7 @@ class OVL:
 
 
 if __name__ == '__main__':
-    model = r'test_data\loc.ovl'
+    model = r'test_data\Loc.ovl'
     a = OVL(model)
     a.read()
     # a.read_uncompressed()

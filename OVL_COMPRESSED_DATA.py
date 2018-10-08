@@ -28,7 +28,7 @@ class OVLCompressedData:
             header = OVSTypeHeader()
             header.read(reader)
             self.ovs_headers.append(header)
-        for _ in range(self.archive.headerSubTypeCnt):
+        for _ in range(self.archive.sub_header_count):
             sub_header = OVSTypeSubHeader()
             sub_header.read(reader)
             total_size += sub_header.size
@@ -48,7 +48,7 @@ class OVLCompressedData:
             file_header.file_name = self.parent.get_file_by_hash(file_header.name_hash).name
             self.ovs_file_headers.append(file_header)
 
-        for _ in range(self.archive.embeddedFileCount):
+        for _ in range(self.archive.embedded_file_count):
             embedded_file = EmbeddedFileDescriptor()
             embedded_file.read(reader)
             self.embedded_file_headers.append(embedded_file)
@@ -75,10 +75,20 @@ class OVLCompressedData:
             reader.seek(sub_header.offset)
             chunk = OVSChunk(self, sub_header)
             chunk.read(reader)
-            chunk.save('./')
+
             self.chunks.append(chunk)
         for embedded_file_header in self.embedded_file_headers:
             self.embedded_files.append(reader.read_bytes(embedded_file_header.size))
+        files = {}
+        for chunk in self.chunks:
+            file_hash = chunk.header.file_hash
+            if not files.get(file_hash,False):
+                files[file_hash] = {'chunk':chunk,'data':chunk.data}
+            else:
+                files[file_hash]['data']+=chunk.data
+        for file in files.values():
+            chunk,data = file.values()
+            chunk.save_raw('./',data)
 
         # assert reader.tell() == reader.size()
 
@@ -93,7 +103,7 @@ class OVLCompressedData:
         self.archive.file_data_header_count = len(self.ovs_file_headers)
         for file_header in self.ovs_file_headers:
             file_header.write(writer)
-        self.archive.embeddedFileCount = len(self.embedded_file_headers)
+        self.archive.embedded_file_count = len(self.embedded_file_headers)
         for embedded_file_id, embedded_file_header in enumerate(self.embedded_file_headers):
             embedded_file_header.size = len(self.embedded_files[embedded_file_id])
             embedded_file_header.write(writer)
@@ -145,9 +155,25 @@ class OVSChunk:
         path = path / 'extracted' / self.file.name
         if not path.parent.exists():
             path.parent.mkdir(exist_ok=True)
-        path = path.with_suffix('.' + self.file_ext)
+        path = path.with_suffix('.' + self.file_ext).absolute()
+        print('Writting {} bytes to {}'.format(len(self.data),self.chunk_name))
+        if not path.exists():
+            with path.open('wb+') as fp:
+                fp.write(self.data)
+        else:
+            with path.open('rb+') as fp:
+                fp.write(self.data)
+
+    def save_raw(self,path,data):
+        if type(path) is not Path:
+            path = Path(path)
+        path = path / 'extracted' / self.file.name
+        if not path.parent.exists():
+            path.parent.mkdir(exist_ok=True)
+        path = path.with_suffix('.' + self.file_ext).absolute()
+        print('Writting {} bytes to {}'.format(len(self.data),self.chunk_name))
         with path.open('wb') as fp:
-            fp.write(self.data)
+            fp.write(data)
 
 
 class OVSTypeHeader:
@@ -282,7 +308,7 @@ class OVSAsset:
     def write(self, writer: ByteIO):
         writer.write_uint32(self.name_hash)
         writer.write_uint32(self.type_hash)
-        writer.write_uint32(self.chunk_id)
+        writer.write_int32(self.chunk_id)
         writer.write_uint32(self.offset)
 
     def __repr__(self):
