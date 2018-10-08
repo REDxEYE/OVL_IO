@@ -27,7 +27,7 @@ class OVL:
 
         self.ovs_headers = []  # type: List[OVSTypeHeader]
         self.ovs_file_headers = []  # type: List[OVSFileDataHeader]
-        self.ovs_file3_headers = []  # type: List[OVSFileSection3]
+        self.ovs_file3_headers = []  # type: List[OVSAsset]
         self.ovs_file4_headers = []  # type: List[OVSFileSection4]
 
         self.files_by_hash = {}
@@ -76,14 +76,18 @@ class OVL:
             self.archives2.append(ovl_archive2)
 
         for archive in self.archives:
-            archive.uncompressed_data = zlib.decompress(self.reader.read_bytes(archive.packed_size))
+
             if archive.name == 'STATIC':
+                archive.uncompressed_data = zlib.decompress(self.reader.read_bytes(archive.packed_size))
                 self.static_archive = archive
-        try:
-            with open(r'test_data\{}.decompressed'.format(os.path.basename(self.path)[:-4]), 'wb') as fp:
-                fp.write(self.static_archive.uncompressed_data)
-        except:
-            pass
+            else:
+                self.reader.seek(archive.ovs_offset)
+                archive.uncompressed_data = zlib.decompress(self.reader.read_bytes(archive.packed_size))
+            try:
+                with open(r'test_data\{}-{}.decompressed'.format(self.path.stem,archive.name), 'wb') as fp:
+                    fp.write(self.static_archive.uncompressed_data)
+            except:
+                pass
 
     def write(self, writer: ByteIO):
         self.header.write(writer)
@@ -186,7 +190,7 @@ class OVL:
         # print(reader)
 
         for i in range(archive.asset_count):
-            file3_header = OVSFileSection3()
+            file3_header = OVSAsset()
             file3_header.read(reader)
             if file3_header.chunk_id > 0:
                 file3_header.offset = section_offsets[file3_header.chunk_id] + file3_header.offset
@@ -195,7 +199,7 @@ class OVL:
             self.ovs_file3_headers.append(file3_header)
             print(file3_header)
 
-        for i in range(archive.fsUnk4Count):
+        for i in range(archive.relocation_num):
             file4_header = OVSFileSection4()
             file4_header.read(reader)
             file4_header.offset1 = section_offsets[file4_header.section1] + file4_header.offset1

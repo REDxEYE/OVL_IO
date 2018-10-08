@@ -295,10 +295,10 @@ class OVLArchiveV2:
 
         self.Block6b = 0
 
-        self.fsUnk4Count = 0
+        self.relocation_num = 0
         self.asset_count = 0
 
-        self.compressedDataStart = 0
+        self.ovs_offset = 0
 
         self.size_extra = 0
 
@@ -328,9 +328,9 @@ class OVLArchiveV2:
         self.Block5b = reader.read_uint16()
         self.embeddedFileCount = reader.read_uint32()
         # self.Block6b = reader.read_uint16()
-        self.fsUnk4Count = reader.read_uint32()
+        self.relocation_num = reader.read_uint32()
         self.asset_count = reader.read_uint32()
-        self.compressedDataStart = reader.read_uint32()
+        self.ovs_offset = reader.read_uint32()
         self.size_extra = reader.read_uint32()
         self.packed_size = reader.read_uint32()
         self.unpacked_size = reader.read_uint32()
@@ -352,9 +352,9 @@ class OVLArchiveV2:
         writer.write_uint16(self.Block5a)
         writer.write_uint16(self.Block5b)
         writer.write_uint32(self.embeddedFileCount)
-        writer.write_uint32(self.fsUnk4Count)
+        writer.write_uint32(self.relocation_num)
         writer.write_uint32(self.asset_count)
-        writer.write_uint32(self.compressedDataStart)
+        writer.write_uint32(self.ovs_offset)
         writer.write_uint32(self.size_extra)
         writer.write_uint32(self.packed_size)
         writer.write_uint32(self.unpacked_size)
@@ -441,21 +441,18 @@ class OVLUnk:
 
     def __init__(self):
         self.unknown00 = 0
-        self.unknown04 = 0
         self.unknown08 = 0
 
     def read(self, reader: ByteIO):
         self.unknown00 = reader.read_uint32()
-        self.unknown04 = reader.read_uint32()
-        self.unknown08 = reader.read_uint32()
+        self.unknown08 = reader.read_uint64()
 
     def write(self, writer: ByteIO):
         writer.write_uint32(self.unknown00)
-        writer.write_uint32(self.unknown04)
-        writer.write_uint32(self.unknown08)
+        writer.write_uint64(self.unknown08)
 
     def __repr__(self):
-        return '<OVL unk {} {} {}>'.format(self.unknown00, self.unknown04, self.unknown08)
+        return '<OVL unk {} {}>'.format(self.unknown00, self.unknown08)
 
 
 class OVLArchive2:
