@@ -169,7 +169,7 @@ class OVLType:
         return '<OVL type "{}" count:{} type_hash:{}>'.format(self.name, self.symbols_to_resolve, self.type_hash)
 
 
-class OVLFile:
+class OVLFileDescriptor:
 
     def __init__(self):
         self.name = ''
@@ -185,9 +185,7 @@ class OVLFile:
         self.name_offset = reader.read_uint32()
         self.hash = reader.read_uint32()
         self.type = reader.read_uint16()
-        # self.unknown1 = reader.read_uint8()
         self.loader_index = reader.read_uint16()
-        # self.unknown2 = reader.read_uint8()
 
         self.name = reader.read_from_offset(0x90 + self.name_offset, reader.read_ascii_string)
 

@@ -2,6 +2,7 @@ import contextlib
 import io
 import struct
 import typing
+import zlib
 from io import BytesIO
 
 
@@ -267,7 +268,7 @@ class ByteIO:
         self.seek(curr_offset, io.SEEK_SET)
         return ret
 
-    def read_bytes(self, size):
+    def read_bytes(self, size=-1):
         return self._read(size)
 
     def read_float16(self):
@@ -308,6 +309,9 @@ class ByteIO:
         if num36 == 0:
             num35 -= 32768
         return num35 / 2048
+
+    def unzip(self):
+        return ByteIO(byte_object=zlib.decompress(self.read_bytes()))
 
 if __name__ == '__main__':
     a = ByteIO(path=r'./test.bin', mode='w')
