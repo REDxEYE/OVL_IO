@@ -41,6 +41,7 @@ class OVSTextureArchive:
                 preader.skip(8 * 3)
                 num53 = preader.read_int64()
                 num54 = preader.read_int16()
+                num55 = preader.read_int8()
                 preader.seek(num53 + 8)
                 num56 = preader.read_int32()
                 num57 = preader.read_int32()
