@@ -20,6 +20,7 @@ class OVLCompressedData:
         self.extra_data = []  # type: bytes
         self.ovs_cur_pos = 0
         self.reader: ByteIO = None
+        self.buffer_reader: ByteIO = None
 
     def write_data(self, name, data, ext):
         path = Path('./') / 'extracted' / name
@@ -84,7 +85,7 @@ class OVLCompressedData:
         for reloc in self.relocations:
             new_buffer.seek(reloc.offset1)
             new_buffer.write_uint32(reloc.offset2)
-
+        self.buffer_reader = new_buffer
         self.ovs_cur_pos = reader.tell()
 
     def read_mesh(self):

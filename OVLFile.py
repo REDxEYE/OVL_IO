@@ -1,6 +1,6 @@
 import zlib
 from pathlib import Path
-from typing import List
+from typing import List, Dict
 
 from ByteIO import ByteIO
 from OVL_COMPRESSED_DATA import OVLCompressedData
@@ -27,7 +27,8 @@ class OVL:
         self.archives2 = []  # type:List[OVLArchive2]
         self.static_archive = None  # type: OVLArchiveV2
 
-        self.files_by_hash = {}
+        self.files_by_hash = {} #type: Dict[int,OVLFileDescriptor]
+        self.hash_by_name = {} #type: Dict[str,int]
 
     def read(self):
         self.header.read(self.reader)
@@ -42,6 +43,8 @@ class OVL:
             ovl_file.read(self.reader)
             ovl_file.loader = self.types[ovl_file.loader_index]
             self.files.append(ovl_file)
+        self.files_by_hash = {f.hash: f for f in self.files}
+        self.hash_by_name = {f.name: f.hash for f in self.files}
         self.archive_name_table_offset = self.reader.tell()
         self.reader.skip(self.header.archive_names_length)
         for _ in range(self.header.archive_count):
