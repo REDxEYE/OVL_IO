@@ -28,7 +28,7 @@ class OVL:
         self.ovs_headers = []  # type: List[OVSTypeHeader]
         self.ovs_file_headers = []  # type: List[OVSFileDataHeader]
         self.ovs_file3_headers = []  # type: List[OVSAsset]
-        self.ovs_file4_headers = []  # type: List[OVSFileSection4]
+        self.ovs_file4_headers = []  # type: List[OVSRelocation]
 
         self.files_by_hash = {}
 
@@ -51,10 +51,12 @@ class OVL:
             ovl_archive = OVLArchiveV2()
             ovl_archive.read(self.reader, self.archive_name_table_offset)
             self.archives.append(ovl_archive)
+
         for _ in range(self.header.dir_count):
             ovl_dir = OVLDir()
             ovl_dir.read(self.reader)
             self.dirs.append(ovl_dir)
+
         for _ in range(self.header.part_count):
             ovl_part = OVLPart()
             ovl_part.read(self.reader)
@@ -62,14 +64,17 @@ class OVL:
                 if ovl_part.hash == file.hash:
                     ovl_part.name = file.name
             self.parts.append(ovl_part)
+
         for _ in range(self.header.other_count):
             ovl_other = OVLOther()
             ovl_other.read(self.reader)
             self.others.append(ovl_other)
+
         for _ in range(self.header.unknown_count):
             ovl_unk = OVLUnk()
             ovl_unk.read(self.reader)
             self.unknown.append(ovl_unk)
+
         for _ in range(self.header.archive_count):
             ovl_archive2 = OVLArchive2()
             ovl_archive2.read(self.reader)
@@ -200,7 +205,7 @@ class OVL:
             print(file3_header)
 
         for i in range(archive.relocation_num):
-            file4_header = OVSFileSection4()
+            file4_header = OVSRelocation()
             file4_header.read(reader)
             file4_header.offset1 = section_offsets[file4_header.section1] + file4_header.offset1
             file4_header.offset2 = section_offsets[file4_header.section2] + file4_header.offset2
@@ -272,12 +277,12 @@ class OVL:
 
 
 if __name__ == '__main__':
-    model = r'test_data\Loc.ovl'
+    model = r'test_data\Tyrannosaurus.ovl'
     a = OVL(model)
     a.read()
     # a.read_uncompressed()
     compressed = OVLCompressedData(a, a.static_archive)
     compressed.read(ByteIO(byte_object=a.static_archive.uncompressed_data))
     out = ByteIO(path='test_data/compressed_repacked', mode='w')
-    compressed.write(out)
+    # compressed.write(out)
     out.close()

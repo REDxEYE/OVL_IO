@@ -122,6 +122,9 @@ class ByteIO:
     def peek_int16(self):
         return self.peek('h')
 
+    def peek_float16(self):
+        return self.peek('e')
+
     def peek_uint8(self):
         return self.peek('B')
 
@@ -273,7 +276,38 @@ class ByteIO:
     def write_bytes(self, data):
         self._write(data)
 
+    def read_packed_vector(self):
+        num34 = self.read_uint64()
+        num35 = num34 & 0xFFFFF
+        num34 >>= 20
+        num36 = num34 & 1
+        num34 >>= 1
+        if num36 == 0:
+            num35 -= 0x100000
+        x = (num35 + 512.5) / 2048
+        num35 = num34 & 0xFFFFF
+        num34 >>= 20
+        num36 = num34 & 1
+        num34 >>= 1
+        if num36 == 0:
+            num35 -= 0x100000
+        y = (num35 + 512.5) / 2048
+        num35 = num34 & 0xFFFFF
+        num34 >>= 20
+        num36 = num34 & 1
+        num34 >>= 1
+        if num36 == 0:
+            num35 -= 0x100000
+        z = (num35 + 512.5) / 2048
+        return x,y,z
 
+    def read_packed_float16(self):
+        num35 = self.read_uint16()
+        num36 = num35 >> 15
+        num35 &= 32767
+        if num36 == 0:
+            num35 -= 32768
+        return num35 / 2048
 
 if __name__ == '__main__':
     a = ByteIO(path=r'./test.bin', mode='w')
