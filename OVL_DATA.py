@@ -136,21 +136,16 @@ class OVLType:
         self.loader_type = 0
         self.symbol_start = 0
         self.symbols_to_resolve = 0
-        self.Unknown3 = 0
-        self.Unknown4 = 0
-        self.Unknown5 = 0
 
     def read(self, reader: ByteIO, is_x64=True):
-        self.name_offset = reader.read_uint32()
         if is_x64:
-            self.zero04 = reader.read_uint32()
+            self.name_offset = reader.read_uint64()
+        else:
+            self.name_offset = reader.read_uint32()
         self.type_hash = reader.read_uint32()
         self.loader_type = reader.read_uint32()
         self.symbol_start = reader.read_uint32()
-        self.symbols_to_resolve = reader.read_uint8()
-        self.Unknown3 = reader.read_uint8()
-        self.Unknown4 = reader.read_uint8()
-        self.Unknown5 = reader.read_uint8()
+        self.symbols_to_resolve = reader.read_uint32()
         self.name = reader.read_from_offset(0x90 + self.name_offset, reader.read_ascii_string)
 
     def write(self, writer: ByteIO, is_x64=True):
@@ -160,10 +155,7 @@ class OVLType:
         writer.write_uint32(self.type_hash)
         writer.write_uint32(self.loader_type)
         writer.write_uint32(self.symbol_start)
-        writer.write_uint8(self.symbols_to_resolve)
-        writer.write_uint8(self.Unknown3)
-        writer.write_uint8(self.Unknown4)
-        writer.write_uint8(self.Unknown5)
+        writer.write_uint32(self.symbols_to_resolve)
 
     def __repr__(self):
         return '<OVL type "{}" count:{} type_hash:{}>'.format(self.name, self.symbols_to_resolve, self.type_hash)

@@ -7,8 +7,8 @@ from OVL_DATA import OVLArchiveV2
 
 class OVLCompressedData:
     def __init__(self, parent, archive: OVLArchiveV2):
-        from OVLFile import OVLFileDescriptor
-        self.parent: OVLFileDescriptor = parent
+        from OVLFile import OVL
+        self.parent: OVL = parent
         self.archive = archive
         self.ovs_headers = []  # type: List[OVSTypeHeader]
         self.ovs_sub_headers = []  # type: List[OVLTypeSubHeader]
@@ -311,7 +311,7 @@ class OVLFileDataHeader:
         writer.write_uint64(self.size2)
 
     def __repr__(self):
-        return f'<OVSFileDataHeader "{self.name_hash}" type hash:{self.type_hash} size:{self.size} offset:{self.offset}>'
+        return f'<OVSFileDataHeader "{self.file_name}" type hash:{self.type_hash} size:{self.size} offset:{self.offset}>'
 
 
 class OVLEmbeddedFileDescriptor:
