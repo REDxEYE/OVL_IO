@@ -4,20 +4,20 @@ from typing import List, Dict
 
 from ByteIO import ByteIO
 from OVL_COMPRESSED_DATA import OVLCompressedData
-from OVL_DATA import OVLType, OVLArchiveV2, OVLFileDescriptor, OVLDir, OVLArchive2, OVLOther, OVLPart, OVLUnk, OVLHeader
+from OVL_DATA import OVLTypeHeader, OVLArchiveV2, OVLFileDescriptor, OVLDir, OVLArchive2, OVLOther, OVLPart, OVLUnk, OVLHeader
 from OVL_Util import OVLBase
 from OVS_TEXTURES import OVSTextureArchive
 
 
 class OVL(OVLBase):
     is_x64 = False
-    unknown_type = OVLType()
+    unknown_type = OVLTypeHeader()
 
     def __init__(self, path):
         self.path = Path(path)
         self.reader = ByteIO(self.path.open('rb'))
         self.header = OVLHeader()
-        self.types = []  # type:List[OVLType]
+        self.types = []  # type:List[OVLTypeHeader]
         self.files = []  # type:List[OVLFileDescriptor]
         self.archive_name_table_offset = 0
         self.archives = []  # type: List[OVLArchiveV2]
@@ -36,7 +36,7 @@ class OVL(OVLBase):
         self.is_x64 = True  # self.header.flags & 0x08
         self.reader.skip(self.header.names_length)
         for _ in range(self.header.type_count):
-            ovl_type = OVLType()
+            ovl_type = OVLTypeHeader()
             self.register(ovl_type)
             ovl_type.read(self.reader, is_x64=self.is_x64)
             self.types.append(ovl_type)
@@ -44,10 +44,9 @@ class OVL(OVLBase):
             ovl_file = OVLFileDescriptor()
             self.register(ovl_file)
             ovl_file.read(self.reader)
-            ovl_file.loader = self.types[ovl_file.loader_index]
             self.files.append(ovl_file)
-        self.files_by_hash = {f.hash: f for f in self.files}
-        self.hash_by_name = {f.name: f.hash for f in self.files}
+        self.files_by_hash = {f.file_hash: f for f in self.files}
+        self.hash_by_name = {f.name: f.file_hash for f in self.files}
         self.archive_name_table_offset = self.reader.tell()
         self.reader.skip(self.header.archive_names_length)
         for _ in range(self.header.archive_count):
@@ -67,7 +66,7 @@ class OVL(OVLBase):
             self.register(ovl_part)
             ovl_part.read(self.reader)
             for file in self.files:
-                if ovl_part.hash == file.hash:
+                if ovl_part.hash == file.file_hash:
                     ovl_part.name = file.name
             self.parts.append(ovl_part)
 
@@ -157,10 +156,10 @@ class OVL(OVLBase):
 
     def get_file_by_hash(self, hash_value) -> OVLFileDescriptor:
         if not self.files_by_hash:
-            self.files_by_hash = {f.hash: f for f in self.files}
+            self.files_by_hash = {f.file_hash: f for f in self.files}
         return self.files_by_hash.get(hash_value)
 
-    def get_type_by_hash(self, hash_value) -> OVLType:
+    def get_type_by_hash(self, hash_value) -> OVLTypeHeader:
         for t in self.types:
             if t.type_hash == hash_value:
                 return t

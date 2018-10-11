@@ -98,7 +98,7 @@ class OVSTextureArchive:
                         file_data_header = self.parent.hash2file_data_header.get(asset.name_hash, False)
                         if file_data_header:
                             num65 = file_data_header.file_array_offset + 1
-                            self.parent.reader.seek(self.parent.array10[num65])
+                            self.parent.reader.seek(self.parent.embedded_file2offset[num65])
                             embedded_file_header = self.parent.embedded_file_headers[num65]
                             image_data = self.parent.reader.read_bytes(embedded_file_header.size)
                             image = Image.frombuffer('RGBA', (width, height), image_data, *pixel_mode)

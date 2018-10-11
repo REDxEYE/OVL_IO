@@ -127,16 +127,19 @@ class OVLHeader(OVLBase):
         writer.write_uint32(self.zero3C)
 
 
-class OVLType(OVLBase):
+class OVLTypeHeader(OVLBase):
 
     def __init__(self):
         self.name = 'UNKNOWN'
         self.name_offset = 0
-        self.zero04 = 0
         self.type_hash = 0
         self.loader_type = 0
         self.symbol_start = 0
         self.symbols_to_resolve = 0
+
+    @property
+    def hash(self):
+        return self.type_hash
 
     def read(self, reader: ByteIO, is_x64=True):
         if is_x64:
@@ -150,9 +153,10 @@ class OVLType(OVLBase):
         self.name = reader.read_from_offset(0x90 + self.name_offset, reader.read_ascii_string)
 
     def write(self, writer: ByteIO, is_x64=True):
-        writer.write_uint32(self.name_offset)
         if is_x64:
-            writer.write_uint32(self.zero04)
+            writer.write_uint64(self.name_offset)
+        else:
+            writer.write_uint32(self.name_offset)
         writer.write_uint32(self.type_hash)
         writer.write_uint32(self.loader_type)
         writer.write_uint32(self.symbol_start)
@@ -167,30 +171,41 @@ class OVLFileDescriptor(OVLBase):
     def __init__(self):
         self.name = ''
         self.name_offset = 0
-        self.hash = 0
-        self.type = 0
+        self.file_hash = 0
+        self._type = 0
         self.unknown1 = 0
         self.loader_index = 0
         self.unknown2 = 0
-        self.loader: OVLType = None
 
     def read(self, reader: ByteIO):
         self.name_offset = reader.read_uint32()
-        self.hash = reader.read_uint32()
-        self.type = reader.read_uint16()
+        self.file_hash = reader.read_uint32()
+        self._type = reader.read_uint16()
         self.loader_index = reader.read_uint16()
 
         self.name = reader.read_from_offset(0x90 + self.name_offset, reader.read_ascii_string)
 
+    @property
+    def type(self) -> OVLTypeHeader:
+        return self.parent.types[self.loader_index]
+
+    @property
+    def type_hash(self):
+        return self.type.hash
+
+    @property
+    def hash(self):
+        return self.file_hash
+
     def write(self, writer: ByteIO):
         writer.write_uint32(self.name_offset)
-        writer.write_uint32(self.hash)
+        writer.write_uint32(self.file_hash)
         writer.write_uint16(self.type)
         writer.write_uint16(self.loader_index)
 
     def __repr__(self):
-        return '<OVL file "{}" type:{} loader:{} loader id:{} hash:{}>'.format(self.name, self.type, self.loader.name,
-                                                                               self.loader_index, self.hash)
+        return '<OVL file "{}" type:{} loader:{} loader id:{} hash:{}>'.format(self.name, self._type, self.type,
+                                                                               self.loader_index, self.file_hash)
 
 
 class OVLArchiveV2(OVLBase):
@@ -199,24 +214,15 @@ class OVLArchiveV2(OVLBase):
         self.name = ''
         self.nameIndex = 0
 
-        self.Block1a = 0
-        self.Block1b = 0
-        self.Block2a = 0
-        self.Block2b = 0
-
+        self.Block1 = 0
+        self.Block2 = 0
         self.sub_header_count = 0
-
-        self.Block3b = 0
-
         self.file_data_header_count = 0
         self.file_type_header_count = 0
 
-        self.Block5a = 0
-        self.Block5b = 0
+        self.Block5 = 0
 
         self.embedded_file_count = 0
-
-        self.Block6b = 0
 
         self.relocation_num = 0
         self.asset_count = 0
@@ -239,15 +245,12 @@ class OVLArchiveV2(OVLBase):
 
     def read(self, reader: ByteIO, archive_name_table_offset):
         self.nameIndex = reader.read_uint32()
-        self.Block1a = reader.read_uint16()
-        self.Block1b = reader.read_uint16()
-        self.Block2a = reader.read_uint16()
-        self.Block2b = reader.read_uint16()
+        self.Block1 = reader.read_uint32()
+        self.Block2 = reader.read_uint32()
         self.sub_header_count = reader.read_uint32()
         self.file_data_header_count = reader.read_uint16()
         self.file_type_header_count = reader.read_uint16()
-        self.Block5a = reader.read_uint16()
-        self.Block5b = reader.read_uint16()
+        self.Block5 = reader.read_uint32()
         self.embedded_file_count = reader.read_uint32()
         self.relocation_num = reader.read_uint32()
         self.asset_count = reader.read_uint32()
@@ -263,15 +266,14 @@ class OVLArchiveV2(OVLBase):
 
     def write(self, writer: ByteIO):
         writer.write_uint32(self.nameIndex)
-        writer.write_uint16(self.Block1a)
-        writer.write_uint16(self.Block1b)
-        writer.write_uint16(self.Block2a)
-        writer.write_uint16(self.Block2b)
+        writer.write_uint32(self.Block1)
+
+        writer.write_uint32(self.Block2)
+
         writer.write_uint32(self.sub_header_count)
         writer.write_uint16(self.file_data_header_count)
         writer.write_uint16(self.file_type_header_count)
-        writer.write_uint16(self.Block5a)
-        writer.write_uint16(self.Block5b)
+        writer.write_uint32(self.Block5)
         writer.write_uint32(self.embedded_file_count)
         writer.write_uint32(self.relocation_num)
         writer.write_uint32(self.asset_count)
