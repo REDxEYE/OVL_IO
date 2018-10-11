@@ -1,3 +1,4 @@
+from copy import copy
 from pathlib import Path
 from typing import List, Dict
 
@@ -19,6 +20,7 @@ class OVLCompressedData(OVLBase):
         self.relocations = []  # type: List[OVLRelocation]
         self.embedded_files = []  # type: List[bytes]
         self.extra_data = b'' # type: bytes
+        self.buffer = b'' # type: bytes
         self.ovs_cur_pos = 0
         self.reader: ByteIO = None
         self.relocated_reader: ByteIO = None
@@ -92,7 +94,8 @@ class OVLCompressedData(OVLBase):
             relocation.offset2 = section_offsets[relocation.section2] + relocation.offset2
             self.relocations.append(relocation)
         self.extra_data = reader.read_bytes(self.archive.size_extra)
-        relocation_buffer = ByteIO(byte_object=reader.read_bytes(total_size))
+        self.buffer = reader.read_bytes(total_size)
+        relocation_buffer = ByteIO(byte_object=copy(self.buffer))
         for reloc in self.relocations:
             relocation_buffer.seek(reloc.offset1)
             relocation_buffer.write_uint32(reloc.offset2)
