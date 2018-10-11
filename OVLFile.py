@@ -5,10 +5,11 @@ from typing import List, Dict
 from ByteIO import ByteIO
 from OVL_COMPRESSED_DATA import OVLCompressedData
 from OVL_DATA import OVLType, OVLArchiveV2, OVLFileDescriptor, OVLDir, OVLArchive2, OVLOther, OVLPart, OVLUnk, OVLHeader
+from OVL_Util import OVLBase
 from OVS_TEXTURES import OVSTextureArchive
 
 
-class OVL:
+class OVL(OVLBase):
     is_x64 = False
     unknown_type = OVLType()
 
@@ -36,10 +37,12 @@ class OVL:
         self.reader.skip(self.header.names_length)
         for _ in range(self.header.type_count):
             ovl_type = OVLType()
+            self.register(ovl_type)
             ovl_type.read(self.reader, is_x64=self.is_x64)
             self.types.append(ovl_type)
         for _ in range(self.header.file_count):
             ovl_file = OVLFileDescriptor()
+            self.register(ovl_file)
             ovl_file.read(self.reader)
             ovl_file.loader = self.types[ovl_file.loader_index]
             self.files.append(ovl_file)
@@ -49,16 +52,19 @@ class OVL:
         self.reader.skip(self.header.archive_names_length)
         for _ in range(self.header.archive_count):
             ovl_archive = OVLArchiveV2()
+            self.register(ovl_archive)
             ovl_archive.read(self.reader, self.archive_name_table_offset)
             self.archives.append(ovl_archive)
 
         for _ in range(self.header.dir_count):
             ovl_dir = OVLDir()
+            self.register(ovl_dir)
             ovl_dir.read(self.reader)
             self.dirs.append(ovl_dir)
 
         for _ in range(self.header.part_count):
             ovl_part = OVLPart()
+            self.register(ovl_part)
             ovl_part.read(self.reader)
             for file in self.files:
                 if ovl_part.hash == file.hash:
@@ -67,16 +73,19 @@ class OVL:
 
         for _ in range(self.header.other_count):
             ovl_other = OVLOther()
+            self.register(ovl_other)
             ovl_other.read(self.reader)
             self.others.append(ovl_other)
 
         for _ in range(self.header.unknown_count):
             ovl_unk = OVLUnk()
+            self.register(ovl_unk)
             ovl_unk.read(self.reader)
             self.unknown.append(ovl_unk)
 
         for _ in range(self.header.archive_count):
             ovl_archive2 = OVLArchive2()
+            self.register(ovl_archive2)
             ovl_archive2.read(self.reader)
             self.archives2.append(ovl_archive2)
 

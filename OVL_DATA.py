@@ -1,8 +1,9 @@
 # from CTF_ByteIO import ByteIO
 from ByteIO import ByteIO
+from OVL_Util import OVLBase
 
 
-class OVLHeader:
+class OVLHeader(OVLBase):
 
     def __init__(self):
         self.sig = ''
@@ -126,7 +127,7 @@ class OVLHeader:
         writer.write_uint32(self.zero3C)
 
 
-class OVLType:
+class OVLType(OVLBase):
 
     def __init__(self):
         self.name = 'UNKNOWN'
@@ -161,7 +162,7 @@ class OVLType:
         return '<OVL type "{}" count:{} type_hash:{}>'.format(self.name, self.symbols_to_resolve, self.type_hash)
 
 
-class OVLFileDescriptor:
+class OVLFileDescriptor(OVLBase):
 
     def __init__(self):
         self.name = ''
@@ -192,75 +193,7 @@ class OVLFileDescriptor:
                                                                                self.loader_index, self.hash)
 
 
-# u4 name_offset;
-# u4 unknown04 <bgcolor=0xd8d8ff>;
-# u4 unknown08 <bgcolor=0xd8d8ff>;
-# u4 fh2_count <format=decimal>;
-# u2 fh3_count <format=decimal>;
-# u2 fh1_count <format=decimal>;
-# u4 zero14 <bgcolor=0xd8d8ff>;
-# u4 unknown18 <bgcolor=0xd8d8ff>;
-# u4 fh6_count <format=decimal>;
-# u4 fh5_count <format=decimal>;
-# u4 zero24 <bgcolor=0xd8d8ff>;
-# u4 unknown28 <bgcolor=0xd8d8ff>;
-# u4 comp_size;
-# u4 uncomp_size;
-# u4 zero34 <bgcolor=0xd8d8ff>;
-# u4 unknown38 <bgcolor=0xd8d8ff>;
-# u4 header2_size;
-# u4 unknown40 <bgcolor=0xd8d8ff>;
-
-class OVLArchive:
-
-    def __init__(self):
-        self.name = ''
-        self.name_offset = 0
-        self.unknown04 = 0
-        self.unknown08 = 0
-        self.fh2_count = 0
-        self.fh3_count = 0
-        self.headerTypeCnt = 0
-        self.zero14 = 0
-        self.unknown18 = 0
-        self.file_count = 0
-        self.symbol_count = 0
-        self.compressed_data_start = 0
-        self.unknown28 = 0
-        self.comp_size = 0
-        self.uncomp_size = 0
-        self.zero34 = 0
-        self.unknown38 = 0
-        self.header2_size = 0
-        self.unknown40 = 0
-
-    def read(self, reader: ByteIO, archive_name_table_offset):
-        self.name_offset = reader.read_uint32()
-        self.name = reader.read_from_offset(archive_name_table_offset + self.name_offset, reader.read_ascii_string)
-        self.unknown04 = reader.read_uint32()
-        self.unknown08 = reader.read_uint32()
-        self.fh2_count = reader.read_uint32()
-        self.fh3_count = reader.read_uint16()
-        self.headerTypeCnt = reader.read_uint16()
-        self.zero14 = reader.read_uint32()
-        self.unknown18 = reader.read_uint32()
-        self.file_count = reader.read_uint32()
-        self.symbol_count = reader.read_uint32()
-        self.compressed_data_start = reader.read_uint32()
-        self.unknown28 = reader.read_uint32()
-        self.comp_size = reader.read_uint32()
-        self.uncomp_size = reader.read_uint32()
-        self.zero34 = reader.read_uint32()
-        self.unknown38 = reader.read_uint32()
-        self.header2_size = reader.read_uint32()
-        self.unknown40 = reader.read_uint32()
-
-    def __repr__(self):
-        return '<OVL archive "{}" compressed size:{} uncompressed size:{}>'.format(self.name, self.comp_size,
-                                                                                   self.uncomp_size)
-
-
-class OVLArchiveV2:
+class OVLArchiveV2(OVLBase):
 
     def __init__(self):
         self.name = ''
@@ -356,7 +289,7 @@ class OVLArchiveV2:
                                                                                    self.unpacked_size)
 
 
-class OVLDir:
+class OVLDir(OVLBase):
 
     def __init__(self):
         self.name = ''
@@ -373,7 +306,7 @@ class OVLDir:
         return '<OVL dir "{}">'.format(self.name)
 
 
-class OVLPart:
+class OVLPart(OVLBase):
 
     def __init__(self):
         self.hash = 0
@@ -402,7 +335,7 @@ class OVLPart:
         return '<OVL part "{}">'.format(self.name)
 
 
-class OVLOther:
+class OVLOther(OVLBase):
 
     def __init__(self):
         self.unknown00 = 0
@@ -425,7 +358,7 @@ class OVLOther:
         return '<OVL other "{}">'.format(self.name)
 
 
-class OVLUnk:
+class OVLUnk(OVLBase):
 
     def __init__(self):
         self.unknown00 = 0
@@ -443,7 +376,7 @@ class OVLUnk:
         return '<OVL unk {} {}>'.format(self.unknown00, self.unknown08)
 
 
-class OVLArchive2:
+class OVLArchive2(OVLBase):
 
     def __init__(self):
         self.unknown00 = 0

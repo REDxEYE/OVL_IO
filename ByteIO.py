@@ -61,6 +61,27 @@ class ByteIO:
     def preview(self):
         with self.save_current_pos():
             return self.read_bytes(256)
+    @property
+    def preview_uint32(self):
+        with self.save_current_pos():
+            return self.read_fmt('IIII')
+    @property
+    def preview_uint64(self):
+        with self.save_current_pos():
+            return self.read_fmt('QQ')
+    @property
+    def preview_float(self):
+        with self.save_current_pos():
+            return self.read_fmt('ffff')
+    @property
+    def preview_uint16(self):
+        with self.save_current_pos():
+            return self.read_fmt('H'*8)
+
+    @property
+    def preview_uint8(self):
+        with self.save_current_pos():
+            return self.read_fmt('B'*16)
 
 
     def rewind(self, amount):
