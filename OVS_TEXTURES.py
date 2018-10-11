@@ -4,14 +4,15 @@ from typing import Dict
 from ByteIO import ByteIO
 from PIL import Image
 
+
 class OVSTextureArchive:
 
     def __init__(self, parent):
         from OVL_COMPRESSED_DATA import OVLCompressedData
         self.parent: OVLCompressedData = parent
-        if len(self.parent.parent.archives)>1:
+        if len(self.parent.parent.archives) > 1:
             self.filepath = self.parent.parent.path.with_suffix('.ovs.textures_l1')
-        elif len(self.parent.parent.archives)>2:
+        elif len(self.parent.parent.archives) > 2:
             self.filepath = self.parent.parent.path.with_suffix('.ovs.textures_l0')
         else:
             print('INVALID')
@@ -27,9 +28,9 @@ class OVSTextureArchive:
         num44 = reader.read_int32()
         reader.skip(4 * 2)
         dictionary4 = {}  # type: Dict[int,int]
-        dictionary5 = {}  # type: Dict[int,int]
+        hash2offset = {}  # type: Dict[int,int]
         dictionary6 = {}  # type: Dict[int,int]
-        dictionary7 = {}  # type: Dict[int,int]
+        hash2size = {}  # type: Dict[int,int]
 
         num45 = reader.tell() + (56 * num44) + 16 + num43
         for i in range(num44):
@@ -37,8 +38,8 @@ class OVSTextureArchive:
             reader.skip(20)
             num47 = reader.read_int32()
             reader.skip(4)
-            dictionary5[num46] = num45
-            dictionary7[num46] = num47
+            hash2offset[num46] = num45
+            hash2size[num46] = num47
             num45 += num47
 
         for asset in self.parent.ovs_assets:
@@ -46,10 +47,10 @@ class OVSTextureArchive:
                 preader.seek(asset.new_offset)
                 preader.skip(8 * 3)
                 num53 = preader.read_int64()
-                num54 = preader.read_int16()
+                texture_format = preader.read_int16()
                 num55 = preader.read_int8()
                 preader.seek(num53 + 8)
-                num56 = preader.read_int32()
+                preader.read_int32()
                 width = preader.read_int32()
                 height = preader.read_int32()
                 reader.skip(4)
@@ -57,18 +58,27 @@ class OVSTextureArchive:
                 if num59 > 1:
                     height *= num59
                 preader.skip(4)
+                pixel_mode = ('raw', 'RGBA')
+                if texture_format == 103:
+                    pixel_mode = ('bcn', 5, 0)
+                if texture_format == 107:
+                    pixel_mode = ('bcn', 7, 0)
+                if texture_format == 96:
+                    pixel_mode = ('bcn', 1, 0)
+                if texture_format == 108:
+                    pixel_mode = ('bcn', 7, 0)
                 if self.parent.parent.files_by_hash.get(asset.name_hash, False):
                     texture_file = self.parent.parent.files_by_hash[asset.name_hash]
                     texture_name = texture_file.name
-                    texture_lod_name = texture_name+'_lod0'
-                    lod_hash = self.parent.parent.hash_by_name.get(texture_lod_name,0)
+                    texture_lod_name = texture_name + '_lod0'
+                    lod_hash = self.parent.parent.hash_by_name.get(texture_lod_name, 0)
                     if lod_hash:
                         lod_file = self.parent.parent.files_by_hash[lod_hash]
                     else:
                         lod_file = None
-                    print(texture_file)
-                    print(lod_file)
-                    print(width,height)
+                    path = self.filepath.parent / texture_name
+                    path = path.with_name(path.name + '.tga')
+                    path = path.absolute()
                     if num55 == 1:
                         file_data_header = self.parent.hash2file_data_header.get(asset.name_hash, False)
                         if file_data_header:
@@ -78,17 +88,21 @@ class OVSTextureArchive:
 
                             image_data = self.parent.reader.read_bytes(embedded_file_header.size)
                             print(embedded_file_header.size)
-                            a = Image.frombuffer('RGB', (width, height), image_data, 'raw', 'RGBA', 0, 1)
-                            a.save(texture_name + '.tga')
+                            image = Image.frombuffer('RGBA', (width, height), image_data, *pixel_mode)
+                            image.split()[-1].save(path.with_name(path.stem + '_ALPHA.tga'))
+                            image = image.convert('RGB')
+                            image.save(path)
                     elif num55 == 2:
-                        if dictionary5.get(lod_hash, False):
-                            reader.seek(dictionary5[lod_hash])
-                            image_data = reader.read_bytes(dictionary7[lod_hash])
-                            print(dictionary7[lod_hash])
-                            # a = Image.frombuffer('RGB', (width, height), image_data, 'raw', 'L', 0, 1)
-                            # a.save(texture_name + '.tga')
+                        if hash2offset.get(lod_hash, False):
+                            reader.seek(hash2offset[lod_hash])
+                            image_data = reader.read_bytes(hash2size[lod_hash])
+                            print(hash2size[lod_hash])
+                            image = Image.frombuffer('RGBA', (width, height), image_data, *pixel_mode)
+                            image.split()[-1].save(path.with_name(path.stem + '_ALPHA.tga'))
+                            image = image.convert('RGB')
+                            image.save(path)
+                        else:
+                            print('ERROR')
 
                 else:
                     print('Texture not found')
-
-
