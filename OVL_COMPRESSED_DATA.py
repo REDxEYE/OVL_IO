@@ -79,7 +79,6 @@ class OVLCompressedData(OVLBase):
             asset = OVLAsset()
             self.register(asset)
             asset.read(reader)
-            asset.name = self.parent.get_file_by_hash(asset.name_hash).name
             if asset.chunk_id > 0:
                 asset.new_offset = section_offsets[asset.chunk_id] + asset.offset
             else:
@@ -231,7 +230,6 @@ class OVSTypeHeader(OVLBase):
         return '<OVS Type header type:{} sub type count:{}>'.format(self.header_type, self.sub_type_count)
 
 
-
 class OVLTypeSubHeader(OVLBase):
 
     def __init__(self):
@@ -261,7 +259,6 @@ class OVLTypeSubHeader(OVLBase):
     @property
     def file_type(self):
         return self.file.type
-
 
     def write(self, writer: ByteIO):
         writer.write_uint32(self.unk1)
@@ -294,7 +291,7 @@ class OVLDataHeader(OVLBase):
         self.file_name = ''
 
     @property
-    def file(self):
+    def file(self) -> OVLFileDescriptor:
         return self.parent.parent.get_file_by_hash(self.name_hash)
 
     def read(self, reader: ByteIO):
@@ -339,31 +336,43 @@ class OVLEmbeddedFileDescriptor(OVLBase):
 class OVLAsset(OVLBase):
 
     def __init__(self):
-        self.name_hash = 0
-        self.type_hash = 0
+        self.file_hash = 0
+        self.local_type_hash = 0
         self.chunk_id = 0
         self.offset = 0
         self.size = 0
         self.new_offset = 0
-        self.name = ''
+
+    @property
+    def file(self) -> OVLFileDescriptor:
+        return self.parent.parent.get_file_by_hash(self.file_hash)
+
+    @property
+    def name(self) -> str:
+        return self.file.name
+
+    @property
+    def type(self):
+        return self.file.type
+
+    @property
+    def type_hash(self) -> int:
+        return self.file.type_hash
 
     def read(self, reader: ByteIO):
-        self.name_hash = reader.read_uint32()
-        self.type_hash = reader.read_uint32()
+        self.file_hash = reader.read_uint32()
+        self.local_type_hash = reader.read_uint32()
         self.chunk_id = reader.read_int32()
         self.offset = reader.read_int32()
 
     def write(self, writer: ByteIO):
-        writer.write_uint32(self.name_hash)
-        writer.write_uint32(self.type_hash)
+        writer.write_uint32(self.file_hash)
+        writer.write_uint32(self.local_type_hash)
         writer.write_int32(self.chunk_id)
         writer.write_uint32(self.offset)
 
     def __repr__(self):
-        mems = []
-        for m, v in vars(self).items():
-            mems.append('{}:{}'.format(m, v))
-        return '<OVSAsset {}>'.format(','.join(mems))
+        return f'<OVSAsset "{self.name}" type:{self.type.name}>'
 
 
 class OVLRelocation(OVLBase):

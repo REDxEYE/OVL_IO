@@ -86,8 +86,8 @@ class OVSTextureArchive:
                     pixel_mode = ('bcn', 1, 0)
                 if texture_format == 108:
                     pixel_mode = ('bcn', 7, 0)
-                if self.parent.parent.files_by_hash.get(asset.name_hash, False):
-                    texture_file = self.parent.parent.files_by_hash[asset.name_hash]
+                if self.parent.parent.files_by_hash.get(asset.file_hash, False):
+                    texture_file = self.parent.parent.files_by_hash[asset.file_hash]
                     texture_name = texture_file.name
                     texture_lod_name = texture_name + '_lod0'
                     lod_hash = self.parent.parent.hash_by_name.get(texture_lod_name, 0)
@@ -95,7 +95,7 @@ class OVSTextureArchive:
                     path = path.with_name(path.name + '.tga')
                     path = path.absolute()
                     if storage_id == 1:
-                        file_data_header = self.parent.hash2file_data_header.get(asset.name_hash, False)
+                        file_data_header = self.parent.hash2file_data_header.get(asset.file_hash, False)
                         if file_data_header:
                             num65 = file_data_header.file_array_offset + 1
                             self.parent.reader.seek(self.parent.embedded_file2offset[num65])
