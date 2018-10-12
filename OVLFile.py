@@ -168,6 +168,7 @@ class OVL(OVLBase):
 
 
 if __name__ == '__main__':
+    # model = r'test_data\Velociraptor.ovl'
     model = r'test_data\Tyrannosaurus.ovl'
     a = OVL(model)
     a.read()

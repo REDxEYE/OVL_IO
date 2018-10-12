@@ -88,6 +88,9 @@ class ByteIO:
         with self.save_current_pos():
             return self.read_fmt('B'*16)
 
+    @property
+    def possition(self):
+        return self.tell()
 
     def rewind(self, amount):
         self.file.seek(-amount, io.SEEK_CUR)

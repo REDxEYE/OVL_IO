@@ -10,6 +10,9 @@ class OVSResourceHeader:
         self.offset = 0
         self.size = 0
 
+    def __repr__(self):
+        return f'<OVSResourceHeader size:{self.size} offset:{self.offset}>'
+
 class OVSTextureArchive:
 
     def __init__(self, parent):
@@ -96,11 +99,13 @@ class OVSTextureArchive:
                     path = path.with_name(path.name + '.tga')
                     path = path.absolute()
                     if storage_id == 1:
-                        file_data_header = self.parent.hash2file_data_header.get(asset.file_hash, False)
+
+                        file_data_header = asset.file_data_header
                         if file_data_header:
-                            num65 = file_data_header.part_array_offset + 1
-                            self.parent.reader.seek(self.parent.embedded_file2offset[num65])
-                            embedded_file_header = self.parent.embedded_file_headers[num65]
+                            part_id = file_data_header.part_array_offset + 1
+                            embedded_file_header = self.parent.embedded_file_headers[part_id]
+                            print(embedded_file_header)
+                            self.parent.reader.seek(embedded_file_header.offset)
                             image_data = self.parent.reader.read_bytes(embedded_file_header.size)
                             image = Image.frombuffer('RGBA', (width, height), image_data, *pixel_mode)
                             image.split()[-1].save(path.with_name(path.stem + '_ALPHA.tga'))
@@ -110,6 +115,7 @@ class OVSTextureArchive:
                         reader = self.readers[storage_id - 2]
                         resource = self.resources.get(lod_hash, None)
                         if resource is not None:
+                            print(resource)
                             reader.seek(resource.offset)
                             image_data = reader.read_bytes(resource.size)
                             image = Image.frombuffer('RGBA', (width, height), image_data, *pixel_mode)
