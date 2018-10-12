@@ -65,7 +65,7 @@ class OVSTextureArchive:
     def extract_textures(self):
         preader = self.parent.relocated_reader
         for asset in self.parent.ovs_assets:
-            # print(asset.type_hash,asset.local_type_hash)
+            # print(asset.container_hash,asset.local_type_hash)
             if asset.local_type_hash == 193506774:
                 preader.seek(asset.new_offset)
                 preader.skip(8 * 3)

@@ -65,8 +65,8 @@ class OVLCompressedData(OVLBase):
             file_header.part_array_offset = offset
             file_header.read(reader)
             offset += file_header.part_count
-            file_header.file_name = self.parent.get_file_by_hash(file_header.name_hash).name
-            self.hash2file_data_header[file_header.name_hash] = file_header
+            file_header.file_name = self.parent.get_file_by_hash(file_header.file_hash).name
+            self.hash2file_data_header[file_header.file_hash] = file_header
             self.ovs_file_headers.append(file_header)
 
         for _ in range(self.archive.embedded_file_count):
@@ -109,11 +109,11 @@ class OVLCompressedData(OVLBase):
         #     for j in range(file_header.file_count):
         #         embedded_header_id = file_header.file_array_offset + j
         #         embedded_header = self.embedded_file_headers[embedded_header_id]
-        #         if file_header.type_hash != 193506774:
+        #         if file_header.container_hash != 193506774:
         #             if embedded_header.archive_id in [0, 1, 2]:
         #                 self.embedded_file2offset[embedded_header_id] = self.ovs_cur_pos
         #                 self.ovs_cur_pos += embedded_header.size
-        #         elif file_header.type_hash == 193506774:
+        #         elif file_header.container_hash == 193506774:
         #             self.embedded_file2offset[embedded_header_id] = self.ovs_cur_pos
         #             self.ovs_cur_pos += embedded_header.size
         for file_header in self.ovs_file_headers:
@@ -198,12 +198,11 @@ class OVLCompressedData(OVLBase):
                     reader.skip(104 * num22)
                     embedded_file = self.embedded_file_headers[file_header.part_array_offset + 1]
                     new_offset = (reader.tell() - embedded_file.offset + 15 & 0xFFFFFFF0) + embedded_file.offset
-                    print(embedded_file.offset, new_offset, new_offset - embedded_file.offset)
                     reader.seek(new_offset)
 
                     bone_count = reader.read_int32()
                     num27 = bone_count + 1
-                    print(bone_count, 'BONECOUNT')
+                    # print(bone_count, 'BONECOUNT')
                     reader.skip(140)
                     some_sort_of_ids = reader.read_fmt('H' * num27)
                     # reader.skip(num27 * 2)
@@ -256,7 +255,7 @@ class OVLCompressedData(OVLBase):
             path = self.parent.path.parent.absolute() / self.parent.path.stem / 'dump'
             os.makedirs(path,exist_ok=True)
             path/=file_header.file.name
-            path = path.with_name(file_header.file.name+file_header.file.type.extention)
+            path = path.with_name(file_header.file.name + file_header.file.type.big_extension)
             print('Saving file to',path)
             with path.open('wb') as buff:
                 for i in range(file_header.part_count):
@@ -359,7 +358,7 @@ class OVLTypeSubHeader(OVLBase):
 class OVLDataHeader(OVLBase):
 
     def __init__(self):
-        self.name_hash = 0
+        self.file_hash = 0
         self.type_hash = 0
         self.fileNo = 0
         self.part_count = 0
@@ -371,10 +370,10 @@ class OVLDataHeader(OVLBase):
 
     @property
     def file(self) -> OVLFileDescriptor:
-        return self.parent.parent.get_file_by_hash(self.name_hash)
+        return self.parent.parent.get_file_by_hash(self.file_hash)
 
     def read(self, reader: ByteIO):
-        self.name_hash = reader.read_uint32()
+        self.file_hash = reader.read_uint32()
         self.type_hash = reader.read_uint32()
         self.fileNo = reader.read_uint16()
         self.part_count = reader.read_uint16()
@@ -383,7 +382,7 @@ class OVLDataHeader(OVLBase):
         self.total_size = reader.read_uint64()
 
     def write(self, writer: ByteIO):
-        writer.write_uint32(self.name_hash)
+        writer.write_uint32(self.file_hash)
         writer.write_uint32(self.type_hash)
         writer.write_uint16(self.fileNo)
         writer.write_uint16(self.part_count)
@@ -429,7 +428,7 @@ class OVLAsset(OVLBase):
 
     @property
     def file_data_header(self) -> OVLDataHeader:
-        return self.parent.hash2file_data_header[self.file_hash]
+        return self.parent.hash2file_data_header.get(self.file_hash,None)
 
     @property
     def name(self) -> str:

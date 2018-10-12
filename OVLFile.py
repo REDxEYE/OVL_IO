@@ -162,7 +162,7 @@ class OVL(OVLBase):
 
     def get_type_by_hash(self, hash_value) -> OVLTypeHeader:
         for t in self.types:
-            if t.type_hash == hash_value:
+            if t.container_hash == hash_value:
                 return t
         return self.unknown_type
 

@@ -142,8 +142,12 @@ class OVLTypeHeader(OVLBase):
         return self.type_hash
 
     @property
-    def extention(self):
+    def extension(self):
         return '.' + self.name.split(':')[-1]
+
+    @property
+    def big_extension(self):
+        return '.'+'.'.join(self.name.split(':')[1:])
 
     def read(self, reader: ByteIO, is_x64=True):
         if is_x64:
