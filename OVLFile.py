@@ -89,6 +89,7 @@ class OVL(OVLBase):
             self.archives2.append(ovl_archive2)
 
         for archive in self.archives:
+            print(archive)
             try:
                 if archive.name == 'STATIC':
                     archive.uncompressed_data = zlib.decompress(self.reader.read_bytes(archive.packed_size))
@@ -173,7 +174,7 @@ if __name__ == '__main__':
     # a.read_uncompressed()
     compressed = OVLCompressedData(a, a.static_archive)
     compressed.read(ByteIO(byte_object=a.static_archive.uncompressed_data))
-    compressed.read_mesh()
+    compressed.read_files()
     b = OVSTextureArchive(compressed)
     b.read()
     # out = ByteIO(path='test_data/compressed_repacked', mode='w')

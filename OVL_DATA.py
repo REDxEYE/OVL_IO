@@ -141,6 +141,10 @@ class OVLTypeHeader(OVLBase):
     def hash(self):
         return self.type_hash
 
+    @property
+    def extention(self):
+        return self.name.split(':')[-1]
+
     def read(self, reader: ByteIO, is_x64=True):
         if is_x64:
             self.name_offset = reader.read_uint64()

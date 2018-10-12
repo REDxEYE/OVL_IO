@@ -18,7 +18,6 @@ class OVLCompressedData(OVLBase):
         self.embedded_file_headers = []  # type: List[OVLEmbeddedFileDescriptor]
         self.ovs_assets = []  # type: List[OVLAsset]
         self.relocations = []  # type: List[OVLRelocation]
-        self.embedded_files = []  # type: List[bytes]
         self.extra_data = b''  # type: bytes
         self.buffer = b''  # type: bytes
         self.ovs_cur_pos = 0
@@ -62,9 +61,9 @@ class OVLCompressedData(OVLBase):
         for _ in range(self.archive.file_data_header_count):
             file_header = OVLDataHeader()
             self.register(file_header)
-            file_header.file_array_offset = offset
+            file_header.part_array_offset = offset
             file_header.read(reader)
-            offset += file_header.file_count
+            offset += file_header.part_count
             file_header.file_name = self.parent.get_file_by_hash(file_header.name_hash).name
             self.hash2file_data_header[file_header.name_hash] = file_header
             self.ovs_file_headers.append(file_header)
@@ -105,26 +104,71 @@ class OVLCompressedData(OVLBase):
 
         self.ovs_cur_pos = reader.tell()
 
+        # for file_header in self.ovs_file_headers:
+        #     for j in range(file_header.file_count):
+        #         embedded_header_id = file_header.file_array_offset + j
+        #         embedded_header = self.embedded_file_headers[embedded_header_id]
+        #         if file_header.type_hash != 193506774:
+        #             if embedded_header.archive_id in [0, 1, 2]:
+        #                 self.embedded_file2offset[embedded_header_id] = self.ovs_cur_pos
+        #                 self.ovs_cur_pos += embedded_header.size
+        #         elif file_header.type_hash == 193506774:
+        #             self.embedded_file2offset[embedded_header_id] = self.ovs_cur_pos
+        #             self.ovs_cur_pos += embedded_header.size
         for file_header in self.ovs_file_headers:
-            for j in range(file_header.file_count):
-                embedded_header_id = file_header.file_array_offset + j
-                embedded_header = self.embedded_file_headers[embedded_header_id]
-                if file_header.type_hash != 193506774:
-                    if embedded_header.archive_id in [0, 1, 2]:
+            if file_header.type_hash != 193506774:
+                for j in range(file_header.part_count):
+                    embedded_header_id = file_header.part_array_offset + j
+                    embedded_header = self.embedded_file_headers[embedded_header_id]
+                    if embedded_header.archive_id == 0:
                         self.embedded_file2offset[embedded_header_id] = self.ovs_cur_pos
                         self.ovs_cur_pos += embedded_header.size
-                elif file_header.type_hash == 193506774:
+        for file_header in self.ovs_file_headers:
+            if file_header.type_hash != 193506774:
+                for j in range(file_header.part_count):
+                    embedded_header_id = file_header.part_array_offset + j
+                    embedded_header = self.embedded_file_headers[embedded_header_id]
+                    if embedded_header.archive_id == 1:
+                        self.embedded_file2offset[embedded_header_id] = self.ovs_cur_pos
+                        self.ovs_cur_pos += embedded_header.size
+        for file_header in self.ovs_file_headers:
+            if file_header.type_hash == 193506774:
+                for j in range(file_header.part_count):
+                    embedded_header_id = file_header.part_array_offset + j
+                    embedded_header = self.embedded_file_headers[embedded_header_id]
                     self.embedded_file2offset[embedded_header_id] = self.ovs_cur_pos
                     self.ovs_cur_pos += embedded_header.size
+        for file_header in self.ovs_file_headers:
+            if file_header.type_hash != 193506774:
+                for j in range(file_header.part_count):
+                    embedded_header_id = file_header.part_array_offset + j
+                    embedded_header = self.embedded_file_headers[embedded_header_id]
+                    if embedded_header.archive_id == 2:
+                        self.embedded_file2offset[embedded_header_id] = self.ovs_cur_pos
+                        self.ovs_cur_pos += embedded_header.size
 
         pass
 
-    def read_mesh(self):
+    def read_files(self):
         reader = self.reader
 
         for file_header in self.ovs_file_headers:
-            if file_header.type_hash == 193499543 and file_header.file_count == 3:
-                reader.seek(self.embedded_file2offset[file_header.file_array_offset + 1])
+            # embedded_file = self.embedded_file_headers[file_header.file_array_offset]
+            # embedded_file2 = self.embedded_file_headers[file_header.file_array_offset+1]
+            print('File "{}"'.format(file_header.file.name))
+            print('\t',file_header)
+            total = 0
+            for i in range(file_header.part_count):
+                embedded_file = self.embedded_file_headers[file_header.part_array_offset + i]
+                print('\t',embedded_file)
+                total+=embedded_file.size
+            print('Total size:',total)
+            print('='*20)
+            if file_header.type_hash == 193499543 and file_header.part_count == 3:
+                # print('Reading "{}"'.format(file_header.file.name))
+                embedded_file = self.embedded_file_headers[file_header.part_array_offset + 1]
+                # print(embedded_file.size,file_header.size1,file_header.size2)
+                reader.seek(self.embedded_file2offset[file_header.part_array_offset + 1])
                 reader.skip(16)
                 num21 = reader.read_int32()
                 bone_pos = []
@@ -148,7 +192,7 @@ class OVLCompressedData(OVLBase):
                     reader.skip(20 * (num22 - 1))
                     reader.skip(4 * num22)
                     reader.skip(104 * num22)
-                    num25 = self.embedded_file2offset[file_header.file_array_offset + 1]
+                    num25 = self.embedded_file2offset[file_header.part_array_offset + 1]
                     new_offset = (reader.tell() - num25 + 15 & 0xFFFFFFF0) + num25
                     reader.seek(new_offset)
                     bone_count = reader.read_int32()
@@ -156,7 +200,6 @@ class OVLCompressedData(OVLBase):
                     num27 = bone_count + 1
                     reader.skip(num27 * 2)
                     reader.skip(bone_count * 64)
-                    name = file_header.file_name
                     for bone_id in range(bone_count):
                         pos = reader.read_fmt('fff')
                         reader.read_float()
@@ -167,7 +210,9 @@ class OVLCompressedData(OVLBase):
                     for bone_id in range(bone_count):
                         parent_id = reader.read_int8()
                         bone_parents[bone_id] = parent_id
-                    reader.seek(self.embedded_file2offset[file_header.file_array_offset + 2])
+                    reader.seek(self.embedded_file2offset[file_header.part_array_offset + 2])
+                    embedded_file = self.embedded_file_headers[file_header.part_array_offset + 2]
+                    # print(embedded_file.size)
                     for i in range(vertex_count):
                         vertex = reader.read_packed_vector()
                         vertexes.append(vertex)
@@ -185,6 +230,7 @@ class OVLCompressedData(OVLBase):
                         pass
                     for i in range(face_count_time3 // 3):
                         faces.append(reader.read_fmt('HHH'))
+
 
     def write(self, writer: ByteIO):  # TODO: FIX IT
         self.archive.file_type_header_count = len(self.ovs_headers)
@@ -283,8 +329,8 @@ class OVLDataHeader(OVLBase):
         self.name_hash = 0
         self.type_hash = 0
         self.fileNo = 0
-        self.file_count = 0
-        self.file_array_offset = 0
+        self.part_count = 0
+        self.part_array_offset = 0
         self.unk4 = 0
         self.size1 = 0
         self.size2 = 0
@@ -298,7 +344,7 @@ class OVLDataHeader(OVLBase):
         self.name_hash = reader.read_uint32()
         self.type_hash = reader.read_uint32()
         self.fileNo = reader.read_uint16()
-        self.file_count = reader.read_uint16()
+        self.part_count = reader.read_uint16()
         self.unk4 = reader.read_uint32()
         self.size1 = reader.read_uint64()
         self.size2 = reader.read_uint64()
@@ -307,13 +353,13 @@ class OVLDataHeader(OVLBase):
         writer.write_uint32(self.name_hash)
         writer.write_uint32(self.type_hash)
         writer.write_uint16(self.fileNo)
-        writer.write_uint16(self.file_count)
+        writer.write_uint16(self.part_count)
         writer.write_uint32(self.unk4)
         writer.write_uint64(self.size1)
         writer.write_uint64(self.size2)
 
     def __repr__(self):
-        return f'<OVSFileDataHeader "{self.file_name}" type hash:{self.type_hash} size:{self.file_count} offset:{self.file_array_offset}>'
+        return f'<OVSFileDataHeader "{self.file_name}" type hash:{self.type_hash} size:{self.size1} {self.size2} file_count:{self.part_count} file_array_offset:{self.part_array_offset}>'
 
 
 class OVLEmbeddedFileDescriptor(OVLBase):
@@ -330,7 +376,7 @@ class OVLEmbeddedFileDescriptor(OVLBase):
         writer.write_uint32(self.size)
 
     def __repr__(self):
-        return f'<EmbeddedFileDescriptor unk1={self.archive_id} size={self.size}>'
+        return f'<EmbeddedFileDescriptor archive_id:{self.archive_id} size:{self.size}>'
 
 
 class OVLAsset(OVLBase):

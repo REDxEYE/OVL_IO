@@ -62,7 +62,8 @@ class OVSTextureArchive:
     def extract_textures(self):
         preader = self.parent.relocated_reader
         for asset in self.parent.ovs_assets:
-            if asset.type_hash == 193506774:
+            # print(asset.type_hash,asset.local_type_hash)
+            if asset.local_type_hash == 193506774:
                 preader.seek(asset.new_offset)
                 preader.skip(8 * 3)
                 data_offset = preader.read_int64()
@@ -97,7 +98,7 @@ class OVSTextureArchive:
                     if storage_id == 1:
                         file_data_header = self.parent.hash2file_data_header.get(asset.file_hash, False)
                         if file_data_header:
-                            num65 = file_data_header.file_array_offset + 1
+                            num65 = file_data_header.part_array_offset + 1
                             self.parent.reader.seek(self.parent.embedded_file2offset[num65])
                             embedded_file_header = self.parent.embedded_file_headers[num65]
                             image_data = self.parent.reader.read_bytes(embedded_file_header.size)

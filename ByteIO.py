@@ -61,6 +61,11 @@ class ByteIO:
     def preview(self):
         with self.save_current_pos():
             return self.read_bytes(256)
+
+    @property
+    def preview_char(self):
+            return self.preview.decode('ascii','replace')
+
     @property
     def preview_uint32(self):
         with self.save_current_pos():
