@@ -1,3 +1,4 @@
+import os
 from copy import copy
 from pathlib import Path
 from typing import List, Dict
@@ -159,7 +160,7 @@ class OVLCompressedData(OVLBase):
         for file_header in self.ovs_file_headers:
             # embedded_file = self.embedded_file_headers[file_header.file_array_offset]
             # embedded_file2 = self.embedded_file_headers[file_header.file_array_offset+1]
-            print('File "{}"'.format(file_header.file.name))
+            print('File "{}" {}'.format(file_header.file.name, file_header.file.type.name))
             print('\t', file_header)
             total = 0
             for i in range(file_header.part_count):
@@ -167,11 +168,8 @@ class OVLCompressedData(OVLBase):
                 print('\t', embedded_file)
                 total += embedded_file.size
             print('Total size:', total)
-            print('=' * 20)
+
             if file_header.type_hash == 193499543 and file_header.part_count == 3:
-
-
-
 
                 embedded_file = self.embedded_file_headers[file_header.part_array_offset + 1]
                 reader.seek(embedded_file.offset)
@@ -205,9 +203,9 @@ class OVLCompressedData(OVLBase):
 
                     bone_count = reader.read_int32()
                     num27 = bone_count + 1
-                    print(bone_count,'BONECOUNT')
+                    print(bone_count, 'BONECOUNT')
                     reader.skip(140)
-                    some_sort_of_ids = reader.read_fmt('H'*num27)
+                    some_sort_of_ids = reader.read_fmt('H' * num27)
                     # reader.skip(num27 * 2)
                     reader.skip(bone_count * 64)
                     for bone_id in range(bone_count):
@@ -218,13 +216,13 @@ class OVLCompressedData(OVLBase):
                         reader.read_float()
                         bone_rot.append(pos)
                     for bone_id in range(bone_count):
-                        parent_id = reader.read_int8()
+                        parent_id = reader.read_uint8()
                         bone_parents[bone_id] = parent_id
                     hash2bone_name = {}
                     embedded_file = self.embedded_file_headers[file_header.part_array_offset]
                     reader.seek(embedded_file.offset)
                     names = []
-                    name_count = num27+1
+                    name_count = num27 + 1
                     reader.seek(embedded_file.offset + 4 * name_count)
                     for _ in range(name_count):
                         names.append(reader.read_ascii_string())
@@ -233,8 +231,8 @@ class OVLCompressedData(OVLBase):
                         name_hash = reader.read_int32()
                         hash2bone_name[name_hash] = names[i]
 
-                    embedded_file2 = self.embedded_file_headers[file_header.part_array_offset + 2]
-                    reader.seek(embedded_file2.offset)
+                    embedded_file = self.embedded_file_headers[file_header.part_array_offset + 2]
+                    reader.seek(embedded_file.offset)
                     # print(embedded_file.size)
                     for i in range(vertex_count):
                         vertex = reader.read_packed_vector()
@@ -253,6 +251,19 @@ class OVLCompressedData(OVLBase):
                         pass
                     for i in range(face_count_time3 // 3):
                         faces.append(reader.read_fmt('HHH'))
+
+
+            path = self.parent.path.parent.absolute() / self.parent.path.stem / 'dump'
+            os.makedirs(path,exist_ok=True)
+            path/=file_header.file.name
+            path = path.with_name(file_header.file.name+file_header.file.type.extention)
+            print('Saving file to',path)
+            with path.open('wb') as buff:
+                for i in range(file_header.part_count):
+                    embedded_file = self.embedded_file_headers[file_header.part_array_offset + i]
+                    reader.seek(embedded_file.offset)
+                    buff.write(reader.read_bytes(embedded_file.size))
+            print('=' * 20)
 
     def write(self, writer: ByteIO):  # TODO: FIX IT
         self.archive.file_type_header_count = len(self.ovs_headers)

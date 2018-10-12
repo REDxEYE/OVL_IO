@@ -143,7 +143,7 @@ class OVLTypeHeader(OVLBase):
 
     @property
     def extention(self):
-        return self.name.split(':')[-1]
+        return '.' + self.name.split(':')[-1]
 
     def read(self, reader: ByteIO, is_x64=True):
         if is_x64:
