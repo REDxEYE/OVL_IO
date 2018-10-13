@@ -162,14 +162,14 @@ class OVL(OVLBase):
 
     def get_type_by_hash(self, hash_value) -> OVLTypeHeader:
         for t in self.types:
-            if t.container_hash == hash_value:
+            if t.type_hash == hash_value:
                 return t
         return self.unknown_type
 
 
 if __name__ == '__main__':
-    # model = r'test_data\Velociraptor.ovl'
-    model = r'test_data\Tyrannosaurus.ovl'
+    model = r'test_data\Dracorex.ovl'
+    # model = r'test_data\Tyrannosaurus.ovl'
     a = OVL(model)
     a.read()
     # a.read_uncompressed()

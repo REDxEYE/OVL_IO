@@ -26,13 +26,14 @@ class OVSTextureArchive:
             self.reader_t1 = ByteIO(file=self.textures_1.open('rb')).unzip()
             self.readers.append(self.reader_t1)
             self.read_archive(self.reader_t1)
-        elif len(self.parent.parent.archives) > 2:
+        if len(self.parent.parent.archives) > 2:
             self.textures_2 = self.parent.parent.path.with_suffix('.ovs.textures_l0')
             self.reader_t2 = ByteIO(file=self.textures_2.open('rb')).unzip()
             self.readers.append(self.reader_t2)
         else:
-            print('INVALID')
-            exit(0xDEAD)
+            pass
+            # print('INVALID')
+            # exit(0xDEAD)
 
     def read(self):
         for reader in self.readers:
@@ -81,25 +82,31 @@ class OVSTextureArchive:
                 if layers > 1:
                     height *= layers
                 preader.skip(4)
-                pixel_mode = ('raw', 'RGBA', 0)  # type: Tuple[str,Any,int]
-                if texture_format == 103:
+                pixel_mode = ('raw', 'RGBA', 0, 1)  # type: Tuple[str,Any,int]
+                out_mode = 'RGBA'
+                if texture_format == 102:
+                    pixel_mode = ('bcn', 4, 0)
+                    out_mode = 'L'
+                elif texture_format == 103:
                     pixel_mode = ('bcn', 5, 0)
-                if texture_format == 107:
+                elif texture_format == 107:
                     pixel_mode = ('bcn', 7, 0)
-                if texture_format == 96:
+                elif texture_format == 96:
                     pixel_mode = ('bcn', 1, 0)
-                if texture_format == 108:
+                elif texture_format == 108:
                     pixel_mode = ('bcn', 7, 0)
+                else:
+                    print('UNKNOWN FORMAT',texture_format)
                 if self.parent.parent.files_by_hash.get(asset.file_hash, False):
                     texture_file = self.parent.parent.files_by_hash[asset.file_hash]
                     texture_name = texture_file.name
                     texture_lod_name = texture_name + '_lod0'
                     lod_hash = self.parent.parent.hash_by_name.get(texture_lod_name, 0)
-                    path = self.textures_1.parent / texture_name
+                    path = self.parent.parent.path.parent.absolute()/self.parent.parent.path.stem / texture_name
                     path = path.with_name(path.name + '.tga')
                     path = path.absolute()
+                    print('TEXTURE',texture_name,width,height,texture_format)
                     if storage_id == 1:
-
                         file_data_header = asset.file_data_header
                         if file_data_header:
                             part_id = file_data_header.part_array_offset + 1
@@ -107,7 +114,7 @@ class OVSTextureArchive:
                             print(embedded_file_header)
                             self.parent.reader.seek(embedded_file_header.offset)
                             image_data = self.parent.reader.read_bytes(embedded_file_header.size)
-                            image = Image.frombuffer('RGBA', (width, height), image_data, *pixel_mode)
+                            image = Image.frombuffer(out_mode, (width, height), image_data, *pixel_mode)
                             image.split()[-1].save(path.with_name(path.stem + '_ALPHA.tga'))
                             image = image.convert('RGB')
                             image.save(path)

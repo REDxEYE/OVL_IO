@@ -25,7 +25,6 @@ class OVLCompressedData(OVLBase):
         self.reader: ByteIO = None
         self.relocated_reader: ByteIO = None
         self.hash2file_data_header = {}  # type: Dict[int,OVLDataHeader]
-        self.embedded_file2offset = [0] * self.archive.embedded_file_count
 
     def write_data(self, name, data, ext):
         path = Path('./') / 'extracted' / name
@@ -158,8 +157,6 @@ class OVLCompressedData(OVLBase):
         reader = self.reader
 
         for file_header in self.ovs_file_headers:
-            # embedded_file = self.embedded_file_headers[file_header.file_array_offset]
-            # embedded_file2 = self.embedded_file_headers[file_header.file_array_offset+1]
             print('File "{}" {}'.format(file_header.file.name, file_header.file.type.name))
             print('\t', file_header)
             total = 0
@@ -251,12 +248,11 @@ class OVLCompressedData(OVLBase):
                     for i in range(face_count_time3 // 3):
                         faces.append(reader.read_fmt('HHH'))
 
-
             path = self.parent.path.parent.absolute() / self.parent.path.stem / 'dump'
-            os.makedirs(path,exist_ok=True)
-            path/=file_header.file.name
+            os.makedirs(path, exist_ok=True)
+            path /= file_header.file.name
             path = path.with_name(file_header.file.name + file_header.file.type.big_extension)
-            print('Saving file to',path)
+            print('Saving file to', path)
             with path.open('wb') as buff:
                 for i in range(file_header.part_count):
                     embedded_file = self.embedded_file_headers[file_header.part_array_offset + i]
@@ -428,7 +424,7 @@ class OVLAsset(OVLBase):
 
     @property
     def file_data_header(self) -> OVLDataHeader:
-        return self.parent.hash2file_data_header.get(self.file_hash,None)
+        return self.parent.hash2file_data_header.get(self.file_hash, None)
 
     @property
     def name(self) -> str:
