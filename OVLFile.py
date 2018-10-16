@@ -168,7 +168,7 @@ class OVL(OVLBase):
 
 
 if __name__ == '__main__':
-    model = r'test_data\Dracorex.ovl'
+    model = r'test_data\Tyrannosaurus.ovl'
     # model = r'test_data\Tyrannosaurus.ovl'
     a = OVL(model)
     a.read()
@@ -176,6 +176,7 @@ if __name__ == '__main__':
     compressed = OVLCompressedData(a, a.static_archive)
     compressed.read(ByteIO(byte_object=a.static_archive.uncompressed_data))
     compressed.read_files()
+    compressed.read_assets()
     b = OVSTextureArchive(compressed)
     b.read()
     # out = ByteIO(path='test_data/compressed_repacked', mode='w')
