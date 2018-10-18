@@ -6,6 +6,8 @@ from typing import List, Dict
 from ByteIO import ByteIO
 from OVL_DATA import OVLArchiveV2, OVLFileDescriptor
 from OVL_Util import OVLBase
+
+
 class OVLCompressedData(OVLBase):
     def __init__(self, parent, archive: OVLArchiveV2) -> None:
         from OVLFile import OVL
@@ -136,9 +138,15 @@ class OVLCompressedData(OVLBase):
 
         pass
 
+    def get_asset_by_hash(self, file_hash):
+        for asset in self.ovs_assets:
+            if asset.file_hash == file_hash:
+                return asset
+        return None
+
     def read_files(self):
         reader = self.reader
-
+        preader = self.relocated_reader
         for file_header in self.ovs_file_headers:
             print('File "{}" {}'.format(file_header.file.name, file_header.file.type.name))
             print('\t', file_header)
@@ -150,6 +158,7 @@ class OVLCompressedData(OVLBase):
             print('Total size:', total)
 
             if file_header.type_hash == 193499543 and file_header.part_count == 3:
+                asset = self.get_asset_by_hash(file_header.file_hash)
 
                 embedded_file = self.embedded_file_headers[file_header.part_array_offset + 1]
                 reader.seek(embedded_file.offset)
@@ -195,17 +204,19 @@ class OVLCompressedData(OVLBase):
                     for bone_id in range(bone_count):
                         parent_id = reader.read_uint8()
                         bone_parents[bone_id] = parent_id
-                    hash2bone_name = {}
+
                     embedded_file = self.embedded_file_headers[file_header.part_array_offset]
+                    hash2bone_name = {}
                     reader.seek(embedded_file.offset)
                     names = []
                     name_count = num27 + 1
-                    reader.seek(embedded_file.offset + 4 * name_count)
+                    reader.skip(4 * name_count)
+                    # reader.seek(embedded_file.offset + 4 * name_count)
                     for _ in range(name_count):
                         names.append(reader.read_ascii_string())
                     reader.seek(embedded_file.offset)
                     for i in range(name_count):
-                        name_hash = reader.read_int32()
+                        name_hash = reader.read_uint32()
                         hash2bone_name[name_hash] = names[i]
 
                     embedded_file = self.embedded_file_headers[file_header.part_array_offset + 2]
@@ -241,30 +252,6 @@ class OVLCompressedData(OVLBase):
                     buff.write(reader.read_bytes(embedded_file.size))
             print('=' * 20)
 
-    def read_assets(self):
-        reader = self.relocated_reader
-        for asset in self.ovs_assets:
-            if asset.file is None or asset.chunk_id<0:
-                continue
-            sub_header = self.ovs_sub_headers[asset.chunk_id]
-            file_heade = self.ovs_file_headers[asset.chunk_id]
-            path = self.parent.path.parent.absolute() / self.parent.path.stem / 'dump' / 'assets'
-            os.makedirs(path, exist_ok=True)
-            path /= asset.file.name
-            path = path.with_name(asset.file.name + asset.file.type.big_extension)
-            print('Saving asset to', path)
-            print(asset)
-            print('File:',sub_header.file)
-            print('File2:',file_heade)
-            reader.seek(asset.new_offset)
-            # asset_reader = ByteIO(byte_object=reader.read_bytes(asset.size))
-            archive_id = reader.read_uint64()
-            data_offset = reader.read_uint64()
-            reader.seek(data_offset)
-            print('Asset data is on',data_offset,'in archive:',archive_id)
-            # with path.open('wb') as buff:
-
-            print('=' * 20)
 
     def write(self, writer: ByteIO):  # TODO: FIX IT
         self.archive.file_type_header_count = len(self.ovs_headers)
