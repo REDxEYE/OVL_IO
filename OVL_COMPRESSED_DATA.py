@@ -101,20 +101,9 @@ class OVLCompressedData(OVLBase):
             relocation_buffer.seek(relocation.offset1)
             relocation_buffer.write_uint32(relocation.offset2)
         self.relocated_reader = relocation_buffer
-
         self.ovs_cur_pos = reader.tell()
 
-        # for file_header in self.ovs_file_headers:
-        #     for j in range(file_header.file_count):
-        #         embedded_header_id = file_header.file_array_offset + j
-        #         embedded_header = self.embedded_file_headers[embedded_header_id]
-        #         if file_header.container_hash != 193506774:
-        #             if embedded_header.archive_id in [0, 1, 2]:
-        #                 self.embedded_file2offset[embedded_header_id] = self.ovs_cur_pos
-        #                 self.ovs_cur_pos += embedded_header.size
-        #         elif file_header.container_hash == 193506774:
-        #             self.embedded_file2offset[embedded_header_id] = self.ovs_cur_pos
-        #             self.ovs_cur_pos += embedded_header.size
+
         for file_header in self.ovs_file_headers:
             if file_header.type_hash != 193506774:
                 for j in range(file_header.part_count):
@@ -122,7 +111,6 @@ class OVLCompressedData(OVLBase):
                     embedded_header = self.embedded_file_headers[embedded_header_id]
                     if embedded_header.archive_id == 0:
                         embedded_header.offset = self.ovs_cur_pos
-                        # self.embedded_file2offset[embedded_header_id] = self.ovs_cur_pos
                         self.ovs_cur_pos += embedded_header.size
         for file_header in self.ovs_file_headers:
             if file_header.type_hash != 193506774:
@@ -131,7 +119,6 @@ class OVLCompressedData(OVLBase):
                     embedded_header = self.embedded_file_headers[embedded_header_id]
                     if embedded_header.archive_id == 1:
                         embedded_header.offset = self.ovs_cur_pos
-                        # self.embedded_file2offset[embedded_header_id] = self.ovs_cur_pos
                         self.ovs_cur_pos += embedded_header.size
         for file_header in self.ovs_file_headers:
             if file_header.type_hash == 193506774:
@@ -139,7 +126,6 @@ class OVLCompressedData(OVLBase):
                     embedded_header_id = file_header.part_array_offset + j
                     embedded_header = self.embedded_file_headers[embedded_header_id]
                     embedded_header.offset = self.ovs_cur_pos
-                    # self.embedded_file2offset[embedded_header_id] = self.ovs_cur_pos
                     self.ovs_cur_pos += embedded_header.size
         for file_header in self.ovs_file_headers:
             if file_header.type_hash != 193506774:
@@ -148,7 +134,6 @@ class OVLCompressedData(OVLBase):
                     embedded_header = self.embedded_file_headers[embedded_header_id]
                     if embedded_header.archive_id == 2:
                         embedded_header.offset = self.ovs_cur_pos
-                        # self.embedded_file2offset[embedded_header_id] = self.ovs_cur_pos
                         self.ovs_cur_pos += embedded_header.size
 
         pass
@@ -224,7 +209,7 @@ class OVLCompressedData(OVLBase):
                         names.append(reader.read_ascii_string())
                     reader.seek(embedded_file.offset)
                     for i in range(name_count):
-                        name_hash = reader.read_int32()
+                        name_hash = reader.read_uint32()
                         hash2bone_name[name_hash] = names[i]
 
                     embedded_file = self.embedded_file_headers[file_header.part_array_offset + 2]
@@ -241,8 +226,8 @@ class OVLCompressedData(OVLBase):
                         uv.append((reader.read_packed_float16(), reader.read_packed_float16()))
                         reader.skip(4 * 3)
                         reader.skip(3)  # skip tangents
-                        weights_bone_ids.extend(reader.read_fmt('bbbb'))
-                        weights_weights.extend(map(lambda a: a / 255, reader.read_fmt('bbbb')))
+                        weights_bone_ids.append(reader.read_fmt('BBBB'))
+                        weights_weights.append(list(map(lambda a: a / 255, reader.read_fmt('BBBB'))))
                         reader.skip(4 * 2)
                         pass
                     for i in range(face_count_time3 // 3):
