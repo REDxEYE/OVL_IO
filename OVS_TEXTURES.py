@@ -66,7 +66,6 @@ class OVSTextureArchive:
     def extract_textures(self):
         preader = self.parent.relocated_reader
         for asset in self.parent.ovs_assets:
-            # print(asset.container_hash,asset.local_type_hash)
             if asset.local_type_hash == 193506774:
                 preader.seek(asset.new_offset)
                 preader.skip(8 * 3)
@@ -134,3 +133,68 @@ class OVSTextureArchive:
 
                 else:
                     print('Texture not found')
+            if asset.chunk_id!=-1:
+                file = self.parent.parent.files_by_hash.get(asset.file_hash)
+                preader.seek(asset.new_offset)
+                if asset.local_type_hash == 2218662654:
+                    string_offsets = []
+                    strings = []
+                    string_count = preader.read_uint64()
+                    string_table_offset = preader.read_uint64()
+                    preader.seek(string_table_offset)
+                    for _ in range(string_count):
+                        string_offset = preader.read_uint64()
+                        string_offsets.append(string_offset)
+                    for string_offset in string_offsets:
+                        preader.seek(string_offset)
+                        strings.append(preader.read_ascii_string())
+                    print('STRINGS FROM {} STRING TABLE :{}'.format(file.name,strings))
+                elif asset.local_type_hash == 193491583:
+                    unk1 = preader.read_uint64()
+                    unk2 = preader.read_uint64()
+                    unks3 = [preader.read_uint64() for _ in range(4)]
+                    null1 = preader.read_uint64()
+                    null2 = preader.read_uint64()
+                    print('UNKS FROM {}:'.format(file.name+file.type.big_extension))
+                    print(unk1)
+                    print(unk2)
+                    print(unks3)
+                    print(null1)
+                    print(null2)
+                    for offset in unks3:
+                        preader.seek(offset)
+                        print('10 next ints on offset', preader.peek_fmt('Q' * 10))
+                        b = 0xDEAD
+                    print('='*10)
+                elif asset.local_type_hash == 2090500106:
+                    a = 0xBEEF # don't really know what is this
+                elif asset.local_type_hash == 267026877:
+                    unk1 = preader.read_uint64()
+                    null1 = preader.read_uint64()
+                    null2 = preader.read_uint64()
+
+                    print('UNKS FROM {}:'.format(file.name))
+                    print(unk1)
+                    print(null1)
+                    print(null2)
+                    print('=' * 10)
+
+                elif asset.local_type_hash == 1074387168:
+                    unk_offset = preader.read_uint64()
+                    unk1 = preader.read_uint64()
+                    preader.seek(unk_offset)
+                    print('UNKS FROM {}:'.format(file.name))
+                    print('unk_offset:',unk_offset)
+                    print('unk1:',unk1)
+                    print('10 next ints on offset',preader.peek_fmt('I'*10))
+                elif asset.local_type_hash == 2356887053: # MODEL SHIT
+                    b = 0xDEAD
+                else:
+                    a = 0xCAFE
+
+
+
+
+
+
+
