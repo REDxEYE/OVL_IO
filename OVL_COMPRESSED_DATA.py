@@ -196,10 +196,9 @@ class OVLCompressedData(OVLBase):
                     reader.skip(bone_count * 64)
                     for bone_id in range(bone_count):
                         pos = reader.read_fmt('fff')
-                        reader.read_float()
+                        reader.skip(4)
                         bone_pos.append(pos)
-                        pos = reader.read_fmt('fff')
-                        reader.read_float()
+                        pos = reader.read_fmt('ffff')
                         bone_rot.append(pos)
                     for bone_id in range(bone_count):
                         parent_id = reader.read_uint8()
@@ -210,14 +209,12 @@ class OVLCompressedData(OVLBase):
                     reader.seek(embedded_file.offset)
                     names = []
                     name_count = num27 + 1
-                    reader.skip(4 * name_count)
-                    # reader.seek(embedded_file.offset + 4 * name_count)
-                    for _ in range(name_count):
-                        names.append(reader.read_ascii_string())
-                    reader.seek(embedded_file.offset)
+                    hashes = [reader.read_uint32() for _ in range(name_count)]
                     for i in range(name_count):
-                        name_hash = reader.read_uint32()
-                        hash2bone_name[name_hash] = names[i]
+                        name_hash = hashes[i]
+                        name = reader.read_ascii_string()
+                        names.append(name)
+                        hash2bone_name[name_hash] = name
 
                     embedded_file = self.embedded_file_headers[file_header.part_array_offset + 2]
                     reader.seek(embedded_file.offset)

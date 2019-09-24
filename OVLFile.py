@@ -171,7 +171,7 @@ class OVL(OVLBase):
 if __name__ == '__main__':
     # model = r'test_data\Tyrannosaurus.ovl'
     model = sys.argv[1]
-    # model = r'test_data\Tyrannosaurus.ovl'
+    # model = r'JWEDinos\Tyrannosaurus\Tyrannosaurus.ovl'
     a = OVL(model)
     a.read()
     # a.read_uncompressed()

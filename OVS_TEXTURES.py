@@ -1,8 +1,8 @@
-from pathlib import Path
 from typing import Dict, Any, Tuple
 
-from ByteIO import ByteIO
 from PIL import Image
+
+from ByteIO import ByteIO
 
 
 class OVSResourceHeader:
@@ -13,6 +13,7 @@ class OVSResourceHeader:
     def __repr__(self):
         return f'<OVSResourceHeader size:{self.size} offset:{self.offset}>'
 
+
 class OVSTextureArchive:
 
     def __init__(self, parent):
@@ -20,7 +21,7 @@ class OVSTextureArchive:
         self.parent: OVLCompressedData = parent
 
         self.readers = []
-        self.resources = {}# type: Dict[int,OVSResourceHeader]
+        self.resources = {}  # type: Dict[int,OVSResourceHeader]
         if len(self.parent.parent.archives) > 1:
             self.textures_1 = self.parent.parent.path.with_suffix('.ovs.textures_l1')
             self.reader_t1 = ByteIO(file=self.textures_1.open('rb')).unzip()
@@ -95,16 +96,16 @@ class OVSTextureArchive:
                 elif texture_format == 108:
                     pixel_mode = ('bcn', 7, 0)
                 else:
-                    print('UNKNOWN FORMAT',texture_format)
+                    print('UNKNOWN FORMAT', texture_format)
                 if self.parent.parent.files_by_hash.get(asset.file_hash, False):
                     texture_file = self.parent.parent.files_by_hash[asset.file_hash]
                     texture_name = texture_file.name
                     texture_lod_name = texture_name + '_lod0'
                     lod_hash = self.parent.parent.hash_by_name.get(texture_lod_name, 0)
-                    path = self.parent.parent.path.parent.absolute()/self.parent.parent.path.stem / texture_name
+                    path = self.parent.parent.path.parent.absolute() / self.parent.parent.path.stem / texture_name
                     path = path.with_name(path.name + '.tga')
                     path = path.absolute()
-                    print('TEXTURE',texture_name,width,height,texture_format)
+                    print('TEXTURE', texture_name, width, height, texture_format)
                     if storage_id == 1:
                         file_data_header = asset.file_data_header
                         if file_data_header:
@@ -133,7 +134,7 @@ class OVSTextureArchive:
 
                 else:
                     print('Texture not found')
-            if asset.chunk_id!=-1:
+            if asset.chunk_id != -1:
                 file = self.parent.parent.files_by_hash.get(asset.file_hash)
                 preader.seek(asset.new_offset)
                 if asset.local_type_hash == 2218662654:
@@ -148,14 +149,14 @@ class OVSTextureArchive:
                     for string_offset in string_offsets:
                         preader.seek(string_offset)
                         strings.append(preader.read_ascii_string())
-                    print('STRINGS FROM {} STRING TABLE :{}'.format(file.name,strings))
+                    print('STRINGS FROM {} STRING TABLE :{}'.format(file.name, strings))
                 elif asset.local_type_hash == 193491583:
                     unk1 = preader.read_uint64()
                     unk2 = preader.read_uint64()
                     unks3 = [preader.read_uint64() for _ in range(4)]
                     null1 = preader.read_uint64()
                     null2 = preader.read_uint64()
-                    print('UNKS FROM {}:'.format(file.name+file.type.big_extension))
+                    print('UNKS FROM {}:'.format(file.name + file.type.big_extension))
                     print(unk1)
                     print(unk2)
                     print(unks3)
@@ -163,11 +164,11 @@ class OVSTextureArchive:
                     print(null2)
                     for offset in unks3:
                         preader.seek(offset)
-                        print('10 next ints on offset', preader.peek_fmt('Q' * 10))
+                        print('10 next ints on offset', preader.peek_fmt('i' * 10))
                         b = 0xDEAD
-                    print('='*10)
+                    print('=' * 10)
                 elif asset.local_type_hash == 2090500106:
-                    a = 0xBEEF # don't really know what is this
+                    a = 0xBEEF  # don't really know what is this
                 elif asset.local_type_hash == 267026877:
                     unk1 = preader.read_uint64()
                     null1 = preader.read_uint64()
@@ -184,17 +185,10 @@ class OVSTextureArchive:
                     unk1 = preader.read_uint64()
                     preader.seek(unk_offset)
                     print('UNKS FROM {}:'.format(file.name))
-                    print('unk_offset:',unk_offset)
-                    print('unk1:',unk1)
-                    print('10 next ints on offset',preader.peek_fmt('I'*10))
-                elif asset.local_type_hash == 2356887053: # MODEL SHIT
+                    print('unk_offset:', unk_offset)
+                    print('unk1:', unk1)
+                    print('10 next ints on offset', preader.peek_fmt('I' * 10))
+                elif asset.local_type_hash == 2356887053:  # MODEL SHIT
                     b = 0xDEAD
                 else:
                     a = 0xCAFE
-
-
-
-
-
-
-
