@@ -63,7 +63,7 @@ class OVLHeader(OVLBase):
         self.file_count2 = reader.read_uint32()
         self.texture_count = reader.read_uint32()
         self.archive_count = reader.read_uint32()
-        self.unknown30 = reader.read_uint32()
+        self.header_types_count = reader.read_uint32()
         self.header_count = reader.read_uint32()
         self.data_count = reader.read_uint32()
         self.buffer_count = reader.read_uint32()
@@ -170,7 +170,7 @@ class OVLArchive(OVLBase):
 
     def __init__(self):
         self.name = ''
-        self.nameIndex = 0
+        self.name_offset = 0
 
         self.ovs_header_offset = 0
         self.ovs_file_offset = 0
@@ -202,7 +202,7 @@ class OVLArchive(OVLBase):
         self.uncompressed_data = None  # type: bytes
 
     def read(self, reader: ByteIO, archive_name_table_offset):
-        self.nameIndex = reader.read_uint32()
+        self.name_offset = reader.read_uint32()
         self.ovs_header_offset = reader.read_uint32()
         self.ovs_file_offset = reader.read_uint32()
         self.header_count = reader.read_uint32()
@@ -220,7 +220,7 @@ class OVLArchive(OVLBase):
         self.ovs_header_offset = reader.read_uint32()
         self.header_size = reader.read_uint32()
         self.ovs_offset = reader.read_uint32()
-        self.name = reader.read_from_offset(archive_name_table_offset + self.nameIndex, reader.read_ascii_string)
+        self.name = reader.read_from_offset(archive_name_table_offset + self.name_offset, reader.read_ascii_string)
 
 
     def __repr__(self):

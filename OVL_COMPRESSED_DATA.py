@@ -198,8 +198,8 @@ class OVLCompressedData(OVLBase):
                         pos = reader.read_fmt('fff')
                         reader.skip(4)
                         bone_pos.append(pos)
-                        pos = reader.read_fmt('ffff')
-                        bone_rot.append(pos)
+                        rot = reader.read_fmt('ffff')
+                        bone_rot.append(rot)
                     for bone_id in range(bone_count):
                         parent_id = reader.read_uint8()
                         bone_parents[bone_id] = parent_id
