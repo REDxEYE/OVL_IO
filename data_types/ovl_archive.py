@@ -13,7 +13,7 @@ class OVLArchive(OVLBase):
         self.ovs_file_offset = 0
         self.header_count = 0
         self.data_count = 0
-        self.type_count = 0
+        self.header_type_count = 0
 
         self.zero = 0
 
@@ -37,6 +37,7 @@ class OVLArchive(OVLBase):
         self.ovs_offset = 0
 
         self.uncompressed_data = b''  # type: bytes
+        self.uncompressed_archive = None
 
     def read(self, reader: ByteIO, archive_name_table_offset):
         self.name_offset = reader.read_uint32()
@@ -44,7 +45,7 @@ class OVLArchive(OVLBase):
         self.ovs_file_offset = reader.read_uint32()
         self.header_count = reader.read_uint32()
         self.data_count = reader.read_uint16()
-        self.type_count = reader.read_uint16()
+        self.header_type_count = reader.read_uint16()
         self.zero = reader.read_uint32()
         self.buffer_count = reader.read_uint32()
         self.fragment_count = reader.read_uint32()
@@ -60,7 +61,8 @@ class OVLArchive(OVLBase):
         self.name = reader.read_from_offset(archive_name_table_offset + self.name_offset, reader.read_ascii_string)
 
     def get_uncompressed(self):
-        return UncompressedArchive(self)
+        self.uncompressed_archive = UncompressedArchive(self)
+        return self.uncompressed_archive
 
     def print(self, prefix=''):
         print(f'{prefix}{self.__class__.__name__}')
@@ -73,7 +75,7 @@ class OVLArchive(OVLBase):
         print(f'{prefix}\tovs_header_offset: {self.ovs_header_offset}')
         print(f'{prefix}\theader_count: {self.header_count}')
         print(f'{prefix}\tdata_count: {self.data_count}')
-        print(f'{prefix}\ttype_count: {self.type_count}')
+        print(f'{prefix}\ttype_count: {self.header_type_count}')
         print(f'{prefix}\tbuffer_count: {self.buffer_count}')
         print(f'{prefix}\tfragment_count: {self.fragment_count}')
         print(f'{prefix}\tfile_count: {self.file_count}')

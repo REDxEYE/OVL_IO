@@ -1,4 +1,7 @@
+from typing import List
+
 from byte_io import ByteIO
+from data_types.compressed_data_types.header_entry import HeaderEntry
 from data_types.ovl_base import OVLBase
 
 
@@ -7,6 +10,7 @@ class HeaderType(OVLBase):
     def __init__(self):
         self.type = 0
         self.sub_header_count = 0
+        self.sub_header_types = []  # type:List[HeaderEntry]
 
     def read(self, reader: ByteIO):
         self.type = reader.read_uint16()
